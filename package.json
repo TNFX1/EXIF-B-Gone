@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "main": "index.html",
   "window": {
-    "title": "EXIF-B-Gone | Obsidian Shield",
+    "title": "EXIF-B-Gone",
     "icon": "icon.ico",
     "width": 1280,
     "height": 850,

@@ -56,13 +56,13 @@
     <section class="lg:col-span-7 flex flex-col gap-6">
       <div id="dropzone" class="carbon-card hover:border-rose-500/40 rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 hover:bg-slate-900/40 group relative overflow-hidden">
         <input type="file" id="fileInput" class="hidden" multiple accept="image/jpeg,image/png,image/webp">
-        <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 shadow-2xl">
+        <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 shadow-2xl pointer-events-none">
           <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-rose-500 transition-colors"></i>
         </div>
-        <h2 class="text-base font-semibold text-slate-200 mb-1" data-i18n="dragTitle">
+        <h2 class="text-base font-semibold text-slate-200 mb-1 pointer-events-none" data-i18n="dragTitle">
           Fotoğraflarınızı buraya sürükleyin veya seçin
         </h2>
-        <p class="text-xs text-slate-500 max-w-sm mx-auto" data-i18n="dragSub">
+        <p class="text-xs text-slate-500 max-w-sm mx-auto pointer-events-none" data-i18n="dragSub">
           JPG, PNG ve WebP dosyaları doğrudan yerel bellekte işlenir.
         </p>
       </div>

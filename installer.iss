@@ -5,6 +5,7 @@ DefaultDirName={autopf}\EXIF-B-Gone
 DefaultGroupName=EXIF-B-Gone
 UninstallDisplayIcon={app}\icon.ico
 SetupIconFile=icon.ico
+WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes
 OutputDir=dist
