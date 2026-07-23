@@ -27,7 +27,7 @@ jobs:
         Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
         
         # Uygulama dosyalarini paketle
-        Compress-Archive -Path "index.html", "app.js", "package.json", "icon.png" -DestinationPath "build_dir\app.nw.zip"
+        Compress-Archive -Path "index.html", "app.js", "package.json", "icon.png", "icon.ico" -DestinationPath "build_dir\app.nw.zip"
         Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
 
         $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
@@ -42,14 +42,11 @@ jobs:
         # Portatif ZIP paketi olustur
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-    # Chocolatey ile Güvenli Inno Setup Kurulumu ve Derleme
+    # Chocolatey ile Inno Setup Kurulumu ve Derleme
     - name: Inno Setup ile Setup.exe Oluştur
       shell: powershell
       run: |
-        # Choco ile Inno Setup kur
         choco install innosetup -y --no-progress
-        
-        # ISCC derleyicisi ile installer.iss paketle
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
     - name: Release Oluştur (ZIP ve Setup.exe Yukle)

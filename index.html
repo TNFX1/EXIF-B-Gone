@@ -3,27 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EXIF-B-Gone | Dark Obsidian Edition</title>
-  <link rel="icon" type="image/png" href="icon.png">
+  <title>EXIF-B-Gone</title>
+  <link rel="icon" type="image/x-icon" href="icon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-    body { 
-      font-family: 'Plus Jakarta Sans', sans-serif; 
-      background-color: #090a0f; 
-    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #090a0f; }
     .carbon-card {
       background: rgba(18, 20, 29, 0.75);
       backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.05);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-    }
-    .carbon-card-active {
-      border: 1px solid rgba(225, 29, 72, 0.4);
-      box-shadow: 0 0 20px rgba(225, 29, 72, 0.15);
     }
     .custom-scroll::-webkit-scrollbar { width: 5px; }
     .custom-scroll::-webkit-scrollbar-track { background: rgba(10, 10, 15, 0.8); }
@@ -32,43 +25,42 @@
 </head>
 <body class="text-slate-200 min-h-screen flex flex-col justify-between selection:bg-rose-600 selection:text-white">
 
-  <header class="border-b border-slate-900/80 bg-slate-950/80 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+  <header class="border-b border-slate-900/80 bg-slate-950/80 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-40">
     <div class="flex items-center gap-3.5">
-      <div class="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center shadow-inner relative group">
-        <div class="absolute inset-0 bg-rose-500/10 rounded-2xl blur-sm group-hover:bg-rose-500/20 transition-all"></div>
+      <div class="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center relative group">
         <img src="icon.png" alt="Logo" class="w-full h-full object-contain relative z-10 rounded-xl">
       </div>
       <div>
         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-          EXIF-B-Gone <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-rose-500 border border-rose-500/20">v1.1 Obsidian</span>
+          EXIF-B-Gone <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-rose-500 border border-rose-500/20">v1.1.0</span>
         </h1>
-        <p class="text-xs text-slate-400">Gizlilik ve EXIF Temizleme Asistanı</p>
+        <p class="text-xs text-slate-400" data-i18n="subtitle">Gizlilik ve EXIF Temizleme Asistanı</p>
       </div>
     </div>
     
-    <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-xs font-medium">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      %100 Yerel Veri İşleme
+    <div class="flex items-center gap-3">
+      <button id="openFeedbackBtn" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-medium transition-all flex items-center gap-1.5">
+        <i class="fa-regular fa-comment-dots text-rose-500"></i> <span data-i18n="btnFeedback">Geri Bildirim</span>
+      </button>
+      <button id="openSettingsBtn" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-medium transition-all">
+        <i class="fa-solid fa-gear text-slate-400 hover:text-white"></i>
+      </button>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     
     <section class="lg:col-span-7 flex flex-col gap-6">
-      
       <div id="dropzone" class="carbon-card hover:border-rose-500/40 rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 hover:bg-slate-900/40 group relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-all"></div>
         <input type="file" id="fileInput" class="hidden" multiple accept="image/jpeg,image/png,image/webp">
-        
-        <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 group-hover:border-rose-500/50 group-hover:scale-105 transition-all duration-300 shadow-2xl">
+        <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 shadow-2xl">
           <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-rose-500 transition-colors"></i>
         </div>
-        
-        <h2 class="text-base font-semibold text-slate-200 mb-1">
-          Fotoğraflarınızı buraya sürükleyin veya <span class="text-rose-500 underline decoration-rose-500/30 underline-offset-4">seçin</span>
+        <h2 class="text-base font-semibold text-slate-200 mb-1" data-i18n="dragTitle">
+          Fotoğraflarınızı buraya sürükleyin veya seçin
         </h2>
-        <p class="text-xs text-slate-500 max-w-sm mx-auto">
-          JPG, PNG ve WebP dosyaları doğrudan RAM üzerinde işlenir.
+        <p class="text-xs text-slate-500 max-w-sm mx-auto" data-i18n="dragSub">
+          JPG, PNG ve WebP dosyaları doğrudan yerel bellekte işlenir.
         </p>
       </div>
 
@@ -76,26 +68,26 @@
         <div class="flex items-center justify-between pb-3 border-b border-slate-800/60">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-layer-group text-rose-500 text-sm"></i>
-            <h3 class="text-sm font-bold text-slate-200">İşlem Kuyruğu</h3>
+            <h3 class="text-sm font-bold text-slate-200" data-i18n="queueTitle">İşlem Kuyruğu</h3>
             <span id="fileCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-900 text-rose-400 font-semibold border border-rose-500/20">0</span>
           </div>
           <button id="clearAllBtn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1">
-            <i class="fa-regular fa-trash-can"></i> Temizle
+            <i class="fa-regular fa-trash-can"></i> <span data-i18n="btnClear">Temizle</span>
           </button>
         </div>
 
         <div id="fileList" class="flex flex-col gap-2.5 max-h-72 overflow-y-auto custom-scroll pr-1">
-          <div id="emptyState" class="text-center py-10 text-slate-600 text-xs">
+          <div id="emptyState" class="text-center py-10 text-slate-600 text-xs" data-i18n="emptyState">
             Henüz fotoğraf eklenmedi.
           </div>
         </div>
 
         <div class="flex items-center gap-3 pt-2">
           <button id="processBtn" disabled class="flex-1 py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Temizle & Tek Tek İndir
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="btnProcess">Temizle & İndir</span>
           </button>
           <button id="zipBtn" disabled class="py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800">
-            <i class="fa-solid fa-file-zipper"></i> ZIP İndir
+            <i class="fa-solid fa-file-zipper"></i> <span data-i18n="btnZip">ZIP İndir</span>
           </button>
         </div>
       </div>
@@ -106,7 +98,7 @@
         <div class="flex items-center justify-between pb-3 border-b border-slate-800/60">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-eye text-rose-500 text-sm"></i>
-            <h3 class="text-sm font-bold text-slate-200">Gizlilik Detayları</h3>
+            <h3 class="text-sm font-bold text-slate-200" data-i18n="inspectorTitle">Gizlilik Detayları</h3>
           </div>
           <span id="selectedFileName" class="text-xs text-slate-500 truncate max-w-[130px] italic">Dosya seçilmedi</span>
         </div>
@@ -116,17 +108,70 @@
         </div>
 
         <div id="exifInspector" class="flex flex-col gap-3 min-h-[180px] justify-center">
-          <div class="text-center py-8 text-slate-600 text-xs leading-relaxed">
-            <i class="fa-solid fa-hand-pointer text-2xl text-slate-700 mb-3 block"></i>
-            Listeden bir fotoğrafa tıklayarak içerisindeki saklı verileri görüntüleyebilirsiniz.
+          <div class="text-center py-8 text-slate-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">
+            Listeden bir fotoğrafa tıklayarak saklı verileri görüntüleyebilirsiniz.
           </div>
         </div>
       </div>
     </section>
   </main>
 
+  <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="carbon-card rounded-3xl p-6 max-w-md w-full mx-4 flex flex-col gap-5 border border-slate-800">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-rose-500"></i> <span data-i18n="settingsTitle">Ayarlar</span>
+        </h3>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-300" data-i18n="langLabel">Uygulama Dili</span>
+          <select id="langSelect" class="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-rose-500">
+            <option value="tr">Türkçe</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="flex flex-col gap-2 pt-2 border-t border-slate-800/60">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-300" data-i18n="updateLabel">Güncelleme Durumu</span>
+            <span id="currentVersionText" class="text-xs text-slate-500">v1.1.0</span>
+          </div>
+          <button id="checkUpdateBtn" class="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-rose-400 text-xs font-medium transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-rotate"></i> <span data-i18n="btnCheckUpdate">Güncellemeleri Kontrol Et</span>
+          </button>
+          <p id="updateStatusText" class="text-[11px] text-slate-500 text-center mt-1 hidden"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="feedbackModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="carbon-card rounded-3xl p-6 max-w-md w-full mx-4 flex flex-col gap-4 border border-slate-800">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-regular fa-paper-plane text-rose-500"></i> <span data-i18n="feedbackTitle">Geri Bildirim Gönder</span>
+        </h3>
+        <button id="closeFeedbackBtn" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-400" data-i18n="feedbackSub">İstek, öneri veya karşılaştığınız hataları bize iletebilirsiniz.</p>
+
+      <form id="feedbackForm" class="flex flex-col gap-3">
+        <input type="email" id="feedbackEmail" placeholder="E-posta adresiniz (Opsiyonel)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500">
+        <textarea id="feedbackMessage" required rows="4" placeholder="Görüş ve önerilerinizi buraya yazın..." class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500 resize-none"></textarea>
+        
+        <button type="submit" id="sendFeedbackBtn" class="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition-all">
+          <span data-i18n="btnSendFeedback">Gönder</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <footer class="text-center py-6 text-xs text-slate-600 border-t border-slate-900/60">
-    EXIF-B-Gone Obsidian Edition • Safe & Local Privacy
+    EXIF-B-Gone • Open Source Privacy Tool
   </footer>
 
   <script src="app.js"></script>

@@ -1,14 +1,14 @@
 {
   "name": "exif-b-gone",
-  "version": "1.1.1",
+  "version": "1.1.0",
   "main": "index.html",
   "window": {
-    "title": "EXIF-B-Gone | Dark Obsidian Edition",
-    "icon": "icon.png",
-    "width": 1240,
-    "height": 840,
-    "min_width": 950,
-    "min_height": 650,
+    "title": "EXIF-B-Gone | Obsidian Shield",
+    "icon": "icon.ico",
+    "width": 1280,
+    "height": 850,
+    "min_width": 980,
+    "min_height": 680,
     "position": "center"
   }
 }
