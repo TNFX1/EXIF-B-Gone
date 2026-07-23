@@ -10,22 +10,22 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Repo'yu Cek
+    - name: Repo'yu Çek
       uses: actions/checkout@v3
 
-    - name: Node.js Kur
+    - name: Node.js Kur (v20)
       uses: actions/setup-node@v3
       with:
-        node-version: 18
+        node-version: 20
 
     - name: NW.js Builder CLI Kur ve Derle
       run: |
         npm install nw-builder -g
-        nwbuild --platforms win64 --outDir dist .
+        nwbuild --mode=build --version=latest --flavor=sdk --platforms=win64 --outDir=dist ./package.json
 
     - name: Release Oluştur ve .exe Yükle
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/EXIF-B-Gone/win64/*
+        files: dist/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
