@@ -42,15 +42,14 @@ jobs:
         # Portatif ZIP paketi olustur
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-    # Inno Setup CLI ile Setup.exe (Kurulum Dosyasi) Olusturma
+    # Chocolatey ile Güvenli Inno Setup Kurulumu ve Derleme
     - name: Inno Setup ile Setup.exe Oluştur
       shell: powershell
       run: |
-        # Inno Setup indir ve sessizce kur
-        Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "is_setup.exe"
-        Start-Process -FilePath ".\is_setup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+        # Choco ile Inno Setup kur
+        choco install innosetup -y --no-progress
         
-        # ISCC compiler ile installer.iss dosyasini derle
+        # ISCC derleyicisi ile installer.iss paketle
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
     - name: Release Oluştur (ZIP ve Setup.exe Yukle)
