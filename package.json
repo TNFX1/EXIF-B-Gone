@@ -1,0 +1,10 @@
+{
+  "name": "EXIF-B-Gone",
+  "main": "index.html",
+  "window": {
+    "title": "EXIF-B-Gone",
+    "width": 1000,
+    "height": 700,
+    "icon": "icon.png"
+  }
+}
