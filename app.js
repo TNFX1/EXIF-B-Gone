@@ -193,45 +193,43 @@ function updateUI() {
           <p class="text-[10px] text-slate-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" data-id="${item.id}" class="delete-item-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
+      <button type="button" class="delete-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
         <i class="fa-solid fa-xmark text-sm pointer-events-none"></i>
       </button>
     `;
 
     div.addEventListener('click', (e) => {
-      if (!e.target.closest('.delete-item-btn')) {
+      if (!e.target.closest('.delete-btn')) {
         selectFile(index);
       }
     });
 
-    fileList.appendChild(div);
-  });
-
-  document.querySelectorAll('.delete-item-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    const delBtn = div.querySelector('.delete-btn');
+    delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      const itemId = btn.getAttribute('data-id');
-      removeById(itemId);
+      removeItemByIndex(index);
     });
+
+    fileList.appendChild(div);
   });
 }
 
-function removeById(id) {
-  const targetIndex = queue.findIndex(item => item.id === id);
-  if (targetIndex !== -1) {
-    queue.splice(targetIndex, 1);
-    if (queue.length === 0) {
-      selectedIndex = null;
-    } else if (selectedIndex >= queue.length) {
-      selectedIndex = queue.length - 1;
-    }
-    updateUI();
-    if (selectedIndex !== null && queue[selectedIndex]) {
-      selectFile(selectedIndex);
-    } else {
-      resetInspector();
-    }
+function removeItemByIndex(index) {
+  if (index < 0 || index >= queue.length) return;
+  queue.splice(index, 1);
+  
+  if (queue.length === 0) {
+    selectedIndex = null;
+  } else if (selectedIndex >= queue.length) {
+    selectedIndex = queue.length - 1;
+  }
+  
+  updateUI();
+  if (selectedIndex !== null && queue[selectedIndex]) {
+    selectFile(selectedIndex);
+  } else {
+    resetInspector();
   }
 }
 
@@ -316,6 +314,20 @@ function resetInspector() {
   document.getElementById('exifInspector').innerHTML = `<div class="text-center py-8 text-slate-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</div>`;
 }
 
+function triggerDownload(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+
 async function processImage(item) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -364,10 +376,7 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   if (queue.length === 0) return;
   for (const item of queue) {
     const processed = await processImage(item);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(processed.blob);
-    a.download = `cleaned_${processed.name}`;
-    a.click();
+    triggerDownload(processed.blob, `cleaned_${processed.name}`);
   }
 });
 
@@ -379,10 +388,7 @@ document.getElementById('zipBtn').addEventListener('click', async () => {
     zip.file(`cleaned_${processed.name}`, processed.blob);
   }
   const content = await zip.generateAsync({ type: 'blob' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(content);
-  a.download = 'EXIF_Cleaned_Photos.zip';
-  a.click();
+  triggerDownload(content, 'EXIF_Cleaned_Photos.zip');
 });
 
 const settingsModal = document.getElementById('settingsModal');
@@ -398,9 +404,8 @@ document.getElementById('langSelect').addEventListener('change', (e) => setLangu
 
 document.getElementById('checkUpdateBtn').addEventListener('click', async () => {
   const container = document.getElementById('updateStatusContainer');
-  const statusText = document.getElementById('updateStatusText');
   container.classList.remove('hidden');
-  statusText.textContent = currentLang === 'tr' ? "Kontrol ediliyor..." : "Checking for updates...";
+  container.innerHTML = `<p class="text-[11px] text-slate-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
 
   try {
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);

@@ -10,6 +10,7 @@ Compression=lzma2
 SolidCompression=yes
 OutputDir=dist
 OutputBaseFilename=EXIF-B-Gone-Setup-x64
+DisableProgramGroupPage=yes
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -20,8 +21,8 @@ Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "icon.png"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\EXIF-B-Gone"; Filename: "{app}\EXIF-B-Gone.exe"; IconFilename: "{app}\icon.ico"; IconIndex: 0
-Name: "{autodesktop}\EXIF-B-Gone"; Filename: "{app}\EXIF-B-Gone.exe"; IconFilename: "{app}\icon.ico"; IconIndex: 0; Tasks: desktopicon
+Name: "{autodesktop}\EXIF-B-Gone"; Filename: "{app}\EXIF-B-Gone.exe"; IconFilename: "{app}\icon.ico"; Tasks: desktopicon
+Name: "{group}\EXIF-B-Gone"; Filename: "{app}\EXIF-B-Gone.exe"; IconFilename: "{app}\icon.ico"
 
 [Run]
 Filename: "{app}\EXIF-B-Gone.exe"; Description: "{cm:LaunchProgram,EXIF-B-Gone}"; Flags: nowait postinstall skipifsilent
