@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Repo'yu Çek
+    - name: Repo'yu Cek
       uses: actions/checkout@v3
 
     - name: Node.js Kur
@@ -18,9 +18,10 @@ jobs:
       with:
         node-version: 18
 
-    - name: NW.js ile .exe Paketle
+    - name: NW.js Builder CLI Kur ve Derle
       run: |
-        npx --yes nwjs-builder-phoenix --platforms win64 --outputDir dist .
+        npm install nw-builder -g
+        nwbuild --platforms win64 --outDir dist .
 
     - name: Release Oluştur ve .exe Yükle
       uses: softprops/action-gh-release@v1
