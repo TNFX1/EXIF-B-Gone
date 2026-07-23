@@ -64,19 +64,19 @@ let currentLang = localStorage.getItem('appLang') || 'tr';
 
 const welcomeModal = document.getElementById('welcomeLangModal');
 if (!localStorage.getItem('appLang')) {
-  welcomeModal.classList.remove('hidden');
+  welcomeModal?.classList.remove('hidden');
 } else {
   setLanguage(currentLang);
 }
 
-document.getElementById('selectTrBtn').addEventListener('click', () => {
+document.getElementById('selectTrBtn')?.addEventListener('click', () => {
   setLanguage('tr');
-  welcomeModal.classList.add('hidden');
+  welcomeModal?.classList.add('hidden');
 });
 
-document.getElementById('selectEnBtn').addEventListener('click', () => {
+document.getElementById('selectEnBtn')?.addEventListener('click', () => {
   setLanguage('en');
-  welcomeModal.classList.add('hidden');
+  welcomeModal?.classList.add('hidden');
 });
 
 function setLanguage(lang) {
@@ -88,41 +88,44 @@ function setLanguage(lang) {
       el.textContent = i18n[lang][key];
     }
   });
-  document.getElementById('langSelect').value = lang;
+  const langSelect = document.getElementById('langSelect');
+  if (langSelect) langSelect.value = lang;
 }
 
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 
-dropzone.addEventListener('click', () => fileInput.click());
+if (dropzone && fileInput) {
+  dropzone.addEventListener('click', () => fileInput.click());
 
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files && e.target.files.length > 0) {
-    handleFiles(Array.from(e.target.files));
-    fileInput.value = '';
-  }
-});
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(Array.from(e.target.files));
+      fileInput.value = '';
+    }
+  });
 
-dropzone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dropzone.classList.add('border-rose-500');
-});
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.add('border-rose-500');
+  });
 
-dropzone.addEventListener('dragleave', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dropzone.classList.remove('border-rose-500');
-});
+  dropzone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove('border-rose-500');
+  });
 
-dropzone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dropzone.classList.remove('border-rose-500');
-  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-    handleFiles(Array.from(e.dataTransfer.files));
-  }
-});
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove('border-rose-500');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(Array.from(e.dataTransfer.files));
+    }
+  });
+}
 
 async function handleFiles(files) {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -144,10 +147,12 @@ async function handleFiles(files) {
     });
   }
   
-  updateUI();
   if (queue.length > 0 && selectedIndex === null) {
-    selectFile(0);
+    selectedIndex = 0;
   }
+  
+  updateUI();
+  if (selectedIndex !== null) selectFile(selectedIndex);
 }
 
 function updateUI() {
@@ -157,27 +162,39 @@ function updateUI() {
   const processBtn = document.getElementById('processBtn');
   const zipBtn = document.getElementById('zipBtn');
 
-  fileCount.textContent = queue.length;
+  if (fileCount) fileCount.textContent = queue.length;
+
+  if (!fileList) return;
 
   if (queue.length === 0) {
-    emptyState.classList.remove('hidden');
     fileList.innerHTML = '';
-    fileList.appendChild(emptyState);
-    processBtn.disabled = true;
-    zipBtn.disabled = true;
-    processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
-    zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+    if (emptyState) {
+      emptyState.classList.remove('hidden');
+      fileList.appendChild(emptyState);
+    }
+    if (processBtn) {
+      processBtn.disabled = true;
+      processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+    }
+    if (zipBtn) {
+      zipBtn.disabled = true;
+      zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+    }
     resetInspector();
     return;
   }
 
-  emptyState.classList.add('hidden');
+  if (emptyState) emptyState.classList.add('hidden');
   fileList.innerHTML = '';
 
-  processBtn.disabled = false;
-  zipBtn.disabled = false;
-  processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
-  zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
+  if (processBtn) {
+    processBtn.disabled = false;
+    processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
+  }
+  if (zipBtn) {
+    zipBtn.disabled = false;
+    zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
+  }
 
   queue.forEach((item, index) => {
     const div = document.createElement('div');
@@ -192,7 +209,7 @@ function updateUI() {
           <p class="text-[10px] text-slate-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" class="delete-single-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
+      <button type="button" data-index="${index}" class="delete-single-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
         <i class="fa-solid fa-xmark text-sm pointer-events-none"></i>
       </button>
     `;
@@ -234,31 +251,36 @@ function selectFile(index) {
   selectedIndex = index;
   const item = queue[index];
 
-  document.getElementById('selectedFileName').textContent = item.name;
+  const fileNameEl = document.getElementById('selectedFileName');
+  if (fileNameEl) fileNameEl.textContent = item.name;
   
   const previewContainer = document.getElementById('imagePreviewContainer');
   const previewImg = document.getElementById('imagePreview');
-  previewImg.src = URL.createObjectURL(item.file);
-  applyPreviewTransform();
-  previewContainer.classList.remove('hidden');
+  if (previewImg && previewContainer) {
+    previewImg.src = URL.createObjectURL(item.file);
+    applyPreviewTransform();
+    previewContainer.classList.remove('hidden');
+  }
 
   const exifInspector = document.getElementById('exifInspector');
-  if (!item.exif || Object.keys(item.exif).length === 0) {
-    exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Bu fotoğrafta gizli EXIF verisi bulunamadı.' : 'No EXIF metadata found in this image.'}</div>`;
-  } else {
-    let html = '<div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">';
-    for (const [key, val] of Object.entries(item.exif)) {
-      if (typeof val !== 'object' && val !== undefined) {
-        html += `
-          <div class="flex items-center justify-between text-xs py-1 border-b border-slate-800/40">
-            <span class="text-slate-400 font-medium">${key}</span>
-            <span class="text-slate-200 font-mono text-[11px] truncate max-w-[150px]">${val}</span>
-          </div>
-        `;
+  if (exifInspector) {
+    if (!item.exif || Object.keys(item.exif).length === 0) {
+      exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Bu fotoğrafta gizli EXIF verisi bulunamadı.' : 'No EXIF metadata found in this image.'}</div>`;
+    } else {
+      let html = '<div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">';
+      for (const [key, val] of Object.entries(item.exif)) {
+        if (typeof val !== 'object' && val !== undefined) {
+          html += `
+            <div class="flex items-center justify-between text-xs py-1 border-b border-slate-800/40">
+              <span class="text-slate-400 font-medium">${key}</span>
+              <span class="text-slate-200 font-mono text-[11px] truncate max-w-[150px]">${val}</span>
+            </div>
+          `;
+        }
       }
+      html += '</div>';
+      exifInspector.innerHTML = html;
     }
-    html += '</div>';
-    exifInspector.innerHTML = html;
   }
 
   updateUI();
@@ -268,36 +290,39 @@ function applyPreviewTransform() {
   if (selectedIndex === null || !queue[selectedIndex]) return;
   const item = queue[selectedIndex];
   const previewImg = document.getElementById('imagePreview');
-  const scaleH = item.flipH ? -1 : 1;
-  previewImg.style.transform = `rotate(${item.rotation}deg) scaleX(${scaleH})`;
+  if (previewImg) {
+    const scaleH = item.flipH ? -1 : 1;
+    previewImg.style.transform = `rotate(${item.rotation}deg) scaleX(${scaleH})`;
+  }
 }
 
-document.getElementById('rotateLeftBtn').addEventListener('click', () => {
+document.getElementById('rotateLeftBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].rotation = (queue[selectedIndex].rotation - 90) % 360;
     applyPreviewTransform();
   }
 });
 
-document.getElementById('rotateRightBtn').addEventListener('click', () => {
+document.getElementById('rotateRightBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].rotation = (queue[selectedIndex].rotation + 90) % 360;
     applyPreviewTransform();
   }
 });
 
-document.getElementById('flipHBtn').addEventListener('click', () => {
+document.getElementById('flipHBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].flipH = !queue[selectedIndex].flipH;
     applyPreviewTransform();
   }
 });
 
-document.getElementById('qualityRange').addEventListener('input', (e) => {
-  document.getElementById('qualityVal').textContent = Math.round(e.target.value * 100) + '%';
+document.getElementById('qualityRange')?.addEventListener('input', (e) => {
+  const qualityVal = document.getElementById('qualityVal');
+  if (qualityVal) qualityVal.textContent = Math.round(e.target.value * 100) + '%';
 });
 
-document.getElementById('clearAllBtn').addEventListener('click', (e) => {
+document.getElementById('clearAllBtn')?.addEventListener('click', (e) => {
   e.preventDefault();
   queue = [];
   selectedIndex = null;
@@ -305,9 +330,16 @@ document.getElementById('clearAllBtn').addEventListener('click', (e) => {
 });
 
 function resetInspector() {
-  document.getElementById('selectedFileName').textContent = currentLang === 'tr' ? 'Dosya seçilmedi' : 'No file selected';
-  document.getElementById('imagePreviewContainer').classList.add('hidden');
-  document.getElementById('exifInspector').innerHTML = `<div class="text-center py-8 text-slate-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</div>`;
+  const fileNameEl = document.getElementById('selectedFileName');
+  if (fileNameEl) fileNameEl.textContent = currentLang === 'tr' ? 'Dosya seçilmedi' : 'No file selected';
+  
+  const previewContainer = document.getElementById('imagePreviewContainer');
+  if (previewContainer) previewContainer.classList.add('hidden');
+  
+  const exifInspector = document.getElementById('exifInspector');
+  if (exifInspector) {
+    exifInspector.innerHTML = `<div class="text-center py-8 text-slate-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</div>`;
+  }
 }
 
 function triggerDownload(blob, fileName) {
@@ -321,7 +353,7 @@ function triggerDownload(blob, fileName) {
   setTimeout(() => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, 200);
+  }, 300);
 }
 
 async function processImage(item) {
@@ -338,7 +370,8 @@ async function processImage(item) {
       let renderW = is90 ? origH : origW;
       let renderH = is90 ? origW : origH;
 
-      const maxWidth = parseInt(document.getElementById('maxWidthInput').value);
+      const maxWidthInput = document.getElementById('maxWidthInput');
+      const maxWidth = maxWidthInput ? parseInt(maxWidthInput.value) : null;
       if (maxWidth && renderW > maxWidth) {
         renderH = Math.round((renderH * maxWidth) / renderW);
         renderW = maxWidth;
@@ -356,9 +389,10 @@ async function processImage(item) {
       const drawH = is90 ? canvas.width : canvas.height;
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
-      const exportFormatSelect = document.getElementById('exportFormat').value;
+      const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
       const targetFormat = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
-      const quality = parseFloat(document.getElementById('qualityRange').value);
+      const qualityRange = document.getElementById('qualityRange');
+      const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
 
       canvas.toBlob((blob) => {
         resolve({ blob, name: item.name, type: targetFormat });
@@ -368,7 +402,7 @@ async function processImage(item) {
   });
 }
 
-document.getElementById('processBtn').addEventListener('click', async () => {
+document.getElementById('processBtn')?.addEventListener('click', async () => {
   if (queue.length === 0) return;
   for (const item of queue) {
     const processed = await processImage(item);
@@ -376,7 +410,7 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('zipBtn').addEventListener('click', async () => {
+document.getElementById('zipBtn')?.addEventListener('click', async () => {
   if (queue.length === 0) return;
   const zip = new JSZip();
   for (const item of queue) {
@@ -390,16 +424,17 @@ document.getElementById('zipBtn').addEventListener('click', async () => {
 const settingsModal = document.getElementById('settingsModal');
 const feedbackModal = document.getElementById('feedbackModal');
 
-document.getElementById('openSettingsBtn').addEventListener('click', () => settingsModal.classList.remove('hidden'));
-document.getElementById('closeSettingsBtn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+document.getElementById('openSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
+document.getElementById('closeSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
 
-document.getElementById('openFeedbackBtn').addEventListener('click', () => feedbackModal.classList.remove('hidden'));
-document.getElementById('closeFeedbackBtn').addEventListener('click', () => feedbackModal.classList.add('hidden'));
+document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
+document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
 
-document.getElementById('langSelect').addEventListener('change', (e) => setLanguage(e.target.value));
+document.getElementById('langSelect')?.addEventListener('change', (e) => setLanguage(e.target.value));
 
-document.getElementById('checkUpdateBtn').addEventListener('click', async () => {
+document.getElementById('checkUpdateBtn')?.addEventListener('click', async () => {
   const container = document.getElementById('updateStatusContainer');
+  if (!container) return;
   container.classList.remove('hidden');
   container.innerHTML = `<p class="text-[11px] text-slate-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
 
@@ -416,7 +451,7 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
         ? `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all cursor-pointer">Sürüm ${data.tag_name} İndir ve Kur</button>`
         : `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all cursor-pointer">Download & Install ${data.tag_name}</button>`;
 
-      document.getElementById('autoInstallBtn').addEventListener('click', async () => {
+      document.getElementById('autoInstallBtn')?.addEventListener('click', async () => {
         container.innerHTML = `<p class="text-[11px] text-slate-400 text-center">${currentLang === 'tr' ? 'Setup indiriliyor ve başlatılıyor...' : 'Downloading and launching setup...'}</p>`;
         
         if (typeof nw !== 'undefined' && nw.Shell) {
@@ -433,14 +468,16 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
   }
 });
 
-document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+document.getElementById('feedbackForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('feedbackEmail').value;
-  const message = document.getElementById('feedbackMessage').value;
+  const email = document.getElementById('feedbackEmail')?.value;
+  const message = document.getElementById('feedbackMessage')?.value;
   const sendBtn = document.getElementById('sendFeedbackBtn');
 
-  sendBtn.disabled = true;
-  sendBtn.textContent = currentLang === 'tr' ? 'Gönderiliyor...' : 'Sending...';
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = currentLang === 'tr' ? 'Gönderiliyor...' : 'Sending...';
+  }
 
   try {
     const response = await fetch(FORMSPREE_ENDPOINT, {
@@ -452,14 +489,16 @@ document.getElementById('feedbackForm').addEventListener('submit', async (e) => 
     if (response.ok) {
       alert(currentLang === 'tr' ? 'Geri bildiriminiz başarıyla iletildi!' : 'Feedback sent successfully!');
       document.getElementById('feedbackForm').reset();
-      feedbackModal.classList.add('hidden');
+      feedbackModal?.classList.add('hidden');
     } else {
       alert(currentLang === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.');
     }
   } catch (error) {
     alert(currentLang === 'tr' ? 'Bağlantı hatası.' : 'Connection error.');
   } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = i18n[currentLang].btnSendFeedback;
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.textContent = i18n[currentLang].btnSendFeedback;
+    }
   }
 });
