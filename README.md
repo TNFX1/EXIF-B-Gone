@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="icon.png" alt="EXIF-B-Gone Logo" width="128" height="128">
+  <img src="icon.ico" alt="EXIF-B-Gone Logo" width="128" height="128">
 
   # 🛡️ EXIF-B-Gone
 
