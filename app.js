@@ -60,10 +60,10 @@ const i18n = {
   }
 };
 
-let currentLang = localStorage.getItem('appLang');
+let currentLang = localStorage.getItem('appLang') || 'tr';
 
 const welcomeModal = document.getElementById('welcomeLangModal');
-if (!currentLang) {
+if (!localStorage.getItem('appLang')) {
   welcomeModal.classList.remove('hidden');
 } else {
   setLanguage(currentLang);
@@ -135,7 +135,6 @@ async function handleFiles(files) {
     } catch (err) {}
     
     queue.push({
-      id: 'img_' + Math.random().toString(36).substr(2, 9),
       file: file,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
@@ -193,18 +192,18 @@ function updateUI() {
           <p class="text-[10px] text-slate-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" class="delete-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
+      <button type="button" class="delete-single-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
         <i class="fa-solid fa-xmark text-sm pointer-events-none"></i>
       </button>
     `;
 
     div.addEventListener('click', (e) => {
-      if (!e.target.closest('.delete-btn')) {
+      if (!e.target.closest('.delete-single-btn')) {
         selectFile(index);
       }
     });
 
-    const delBtn = div.querySelector('.delete-btn');
+    const delBtn = div.querySelector('.delete-single-btn');
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -216,15 +215,12 @@ function updateUI() {
 }
 
 function removeItemByIndex(index) {
-  if (index < 0 || index >= queue.length) return;
   queue.splice(index, 1);
-  
   if (queue.length === 0) {
     selectedIndex = null;
   } else if (selectedIndex >= queue.length) {
     selectedIndex = queue.length - 1;
   }
-  
   updateUI();
   if (selectedIndex !== null && queue[selectedIndex]) {
     selectFile(selectedIndex);
@@ -325,7 +321,7 @@ function triggerDownload(blob, fileName) {
   setTimeout(() => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, 100);
+  }, 200);
 }
 
 async function processImage(item) {
