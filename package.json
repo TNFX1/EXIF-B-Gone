@@ -1,9 +1,9 @@
 {
   "name": "exif-b-gone",
-  "version": "1.0.0",
+  "version": "1.0.9",
   "main": "index.html",
   "window": {
-    "title": "EXIF-B-Gone | Privacy Utility",
+    "title": "EXIF-B-Gone | Personal Privacy Shield",
     "icon": "icon.png",
     "width": 1200,
     "height": 800,

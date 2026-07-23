@@ -18,14 +18,14 @@ dropzone.addEventListener('click', () => fileInput.click());
 ['dragenter', 'dragover'].forEach(event => {
   dropzone.addEventListener(event, (e) => {
     e.preventDefault();
-    dropzone.classList.add('border-cyan-500', 'bg-cyan-500/5');
+    dropzone.classList.add('border-cyan-400', 'bg-cyan-500/5');
   });
 });
 
 ['dragleave', 'drop'].forEach(event => {
   dropzone.addEventListener(event, (e) => {
     e.preventDefault();
-    dropzone.classList.remove('border-cyan-500', 'bg-cyan-500/5');
+    dropzone.classList.remove('border-cyan-400', 'bg-cyan-500/5');
   });
 });
 
@@ -92,28 +92,33 @@ function updateUI() {
   if (queue.length === 0) {
     emptyState.classList.remove('hidden');
     processBtn.disabled = true;
-    processBtn.className = "w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition-all flex items-center justify-center gap-2";
-    exifInspector.innerHTML = `<p class="text-xs text-slate-500 text-center py-12">Click on any queued file on the left to inspect its hidden EXIF metadata.</p>`;
-    selectedFileName.textContent = 'Select a file';
+    processBtn.className = "w-full mt-2 py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg";
+    exifInspector.innerHTML = `
+      <div class="text-center py-8 text-slate-500 text-xs leading-relaxed">
+        <i class="fa-regular fa-hand-pointer text-2xl text-slate-600 mb-3 block"></i>
+        Soldaki listeden bir fotoğrafa tıklayarak içerisindeki gizli verileri (Konum, Tarih, Cihaz) inceleyebilirsiniz.
+      </div>
+    `;
+    selectedFileName.textContent = 'Dosya seçilmedi';
     return;
   }
 
   emptyState.classList.add('hidden');
   processBtn.disabled = false;
-  processBtn.className = "w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer flex items-center justify-center gap-2";
+  processBtn.className = "w-full mt-2 py-3.5 px-5 rounded-2xl font-semibold text-sm bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-bold hover:shadow-lg hover:shadow-cyan-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg";
 
   queue.forEach((item, index) => {
     const hasSensitiveData = Object.keys(item.metadata).length > 0;
     
     const card = document.createElement('div');
-    card.className = `p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+    card.className = `p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
       selectedIndex === index ? 'bg-cyan-500/10 border-cyan-500/40' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
     }`;
 
     card.innerHTML = `
       <div class="flex items-center gap-3 overflow-hidden">
-        <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 flex-shrink-0">
-          <i class="fa-regular fa-image"></i>
+        <div class="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-400 flex-shrink-0">
+          <i class="fa-regular fa-image text-base"></i>
         </div>
         <div class="truncate">
           <p class="text-xs font-semibold text-slate-200 truncate">${item.file.name}</p>
@@ -124,7 +129,7 @@ function updateUI() {
         <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${
           hasSensitiveData ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
         }">
-          ${hasSensitiveData ? 'EXIF Detected' : 'Clean / Safe'}
+          ${hasSensitiveData ? 'EXIF Bulundu' : 'Temiz / Güvenli'}
         </span>
         <button onclick="removeItem(event, ${index})" class="text-slate-500 hover:text-rose-400 p-1 text-xs transition-colors">
           <i class="fa-solid fa-xmark"></i>
@@ -148,21 +153,21 @@ function inspectMetadata(item) {
 
   if (keys.length === 0) {
     exifInspector.innerHTML = `
-      <div class="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-center my-4">
+      <div class="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-center my-2">
         <i class="fa-solid fa-shield-check text-2xl text-emerald-400 mb-2"></i>
-        <p class="text-xs font-semibold text-emerald-300">No Sensitive EXIF Found!</p>
-        <p class="text-[11px] text-slate-400 mt-1">This photo does not contain GPS locations, camera serials, or capture dates.</p>
+        <p class="text-xs font-semibold text-emerald-300">Hassas Veri Bulunmadı!</p>
+        <p class="text-[11px] text-slate-400 mt-1">Bu fotoğrafta GPS konumu, cihaz seri numarası veya çekim tarihi gibi gizli veriler bulunmuyor.</p>
       </div>
     `;
     return;
   }
 
-  let html = `<div class="flex flex-col gap-2 max-h-96 overflow-y-auto pr-1">`;
+  let html = `<div class="flex flex-col gap-2 max-h-80 overflow-y-auto custom-scroll pr-1">`;
   for (let key in item.metadata) {
     html += `
-      <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 text-xs">
+      <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 text-xs">
         <span class="text-slate-400 font-medium">${key}</span>
-        <span class="text-cyan-300 font-mono text-[11px] truncate max-w-[180px]">${item.metadata[key]}</span>
+        <span class="text-cyan-300 font-mono text-[11px] truncate max-w-[160px]">${item.metadata[key]}</span>
       </div>
     `;
   }

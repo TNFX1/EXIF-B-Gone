@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="tr" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EXIF-B-Gone | Personal Privacy Shield</title>
+  <link rel="icon" type="image/png" href="icon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
@@ -24,12 +25,13 @@
 
   <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-50">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-teal-400 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-        <i class="fa-solid fa-user-shield text-slate-950 text-xl"></i>
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-teal-400 flex items-center justify-center shadow-lg shadow-cyan-500/20 overflow-hidden">
+        <img src="icon.png" alt="Logo" class="w-full h-full object-cover" onerror="this.remove(); document.getElementById('defaultHeaderIcon').classList.remove('hidden')">
+        <i id="defaultHeaderIcon" class="fa-solid fa-user-shield text-slate-950 text-xl hidden"></i>
       </div>
       <div>
         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-          EXIF-B-Gone <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v1.0</span>
+          EXIF-B-Gone <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v1.0.9</span>
         </h1>
         <p class="text-xs text-slate-400">Güvenli ve Yerel Fotoğraf Gizlilik Asistanı</p>
       </div>
