@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -16,19 +19,15 @@ jobs:
     - name: NW.js ve Proje Dosyalarini Birlestir
       shell: powershell
       run: |
-        # 1. Klasorleri hazirla
         New-Item -ItemType Directory -Path build_dir
         New-Item -ItemType Directory -Path dist
 
-        # 2. Resmi NW.js Windows sürümünü indir ve çıkar
         Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
         Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
         
-        # 3. Proje dosyalarini ZIP yap (.nw)
         Compress-Archive -Path "index.html", "app.js", "package.json" -DestinationPath "build_dir\app.nw.zip"
         Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
 
-        # 4. NW.js klasorune git ve nw.exe ile app.nw'yi birleştirip EXIF-B-Gone.exe yap
         $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
         Copy-Item -Path "build_dir\app.nw" -Destination $nwPath.FullName
         
@@ -37,10 +36,9 @@ jobs:
         Remove-Item nw.exe
         Remove-Item app.nw
 
-        # 5. Tüm dağıtım klasörünü ZIP olarak paketle
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-    - name: Release Oluştur ve ZIP/EXE Yükle
+    - name: Release Oluştur ve ZIP Yükle
       uses: softprops/action-gh-release@v1
       with:
         files: dist/EXIF-B-Gone-Windows-x64.zip
