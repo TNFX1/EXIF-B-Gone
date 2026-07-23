@@ -3,84 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EXIF-B-Gone | Privacy-First EXIF Remover</title>
+  <title>EXIF-B-Gone | Personal Privacy Shield</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .glass-card {
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(12px);
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.5);
+      backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
 
-  <header class="border-b border-slate-800/60 bg-slate-900/40 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-50">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-        <i class="fa-solid fa-shield-halved text-slate-950 text-xl"></i>
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-teal-400 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <i class="fa-solid fa-user-shield text-slate-950 text-xl"></i>
       </div>
       <div>
-        <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">EXIF-B-Gone</h1>
-        <p class="text-xs text-slate-400 font-medium">Privacy-First Local Metadata Eraser</p>
+        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+          EXIF-B-Gone <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v1.0</span>
+        </h1>
+        <p class="text-xs text-slate-400">Güvenli ve Yerel Fotoğraf Gizlilik Asistanı</p>
       </div>
     </div>
-    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-      100% Client-Side
+    
+    <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs font-medium">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      Verileriniz %100 Cihazınızda Kalır
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+  <main class="max-w-6xl mx-auto w-full px-6 py-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     
     <section class="lg:col-span-7 flex flex-col gap-6">
       
-      <div id="dropzone" class="glass-card border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 hover:bg-slate-900/40 group">
+      <div id="dropzone" class="glass-panel border-2 border-dashed border-slate-700/80 hover:border-cyan-400/60 rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 hover:bg-slate-900/50 group">
         <input type="file" id="fileInput" class="hidden" multiple accept="image/jpeg,image/png,image/webp">
-        <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 transition-all">
-          <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-cyan-400"></i>
+        
+        <div class="w-16 h-16 rounded-2xl bg-slate-800/90 border border-slate-700/80 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 group-hover:border-cyan-400/40 transition-all duration-300 shadow-xl">
+          <i class="fa-solid fa-images text-2xl text-slate-400 group-hover:text-cyan-400 transition-colors"></i>
         </div>
-        <h3 class="text-base font-semibold text-slate-200 mb-1">Drag & Drop images here or <span class="text-cyan-400 underline decoration-cyan-400/40">Browse</span></h3>
-        <p class="text-xs text-slate-400">Supports JPEG, PNG, WebP files (Processed entirely in RAM)</p>
+        
+        <h2 class="text-base font-semibold text-slate-200 mb-1">
+          Fotoğraflarınızı buraya sürükleyin veya <span class="text-cyan-400 underline decoration-cyan-400/30 underline-offset-4">seçin</span>
+        </h2>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">
+          JPEG, PNG ve WebP formatları desteklenir. Hiçbir dosya sunucuya yüklenmez.
+        </p>
       </div>
 
-      <div class="glass-card rounded-2xl p-5 flex flex-col gap-4">
+      <div class="glass-panel rounded-3xl p-6 flex flex-col gap-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h2 class="text-sm font-bold text-slate-300 flex items-center gap-2">
-            <i class="fa-solid fa-layer-group text-cyan-400"></i> Uploaded Queue (<span id="fileCount">0</span>)
-          </h2>
-          <button id="clearAllBtn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors">Clear All</button>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-cyan-400 text-sm"></i>
+            <h3 class="text-sm font-bold text-slate-200">İşlenecek Fotoğraflar</h3>
+            <span id="fileCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold">0</span>
+          </div>
+          <button id="clearAllBtn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1">
+            <i class="fa-regular fa-trash-can"></i> Temizle
+          </button>
         </div>
 
-        <div id="fileList" class="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
-          <p id="emptyState" class="text-xs text-slate-500 text-center py-8">No files uploaded yet.</p>
+        <div id="fileList" class="flex flex-col gap-2.5 max-h-72 overflow-y-auto custom-scroll pr-1">
+          <div id="emptyState" class="text-center py-10 text-slate-500 text-xs">
+            Henüz fotoğraf eklenmedi.
+          </div>
         </div>
 
-        <button id="processBtn" disabled class="w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition-all flex items-center justify-center gap-2">
-          <i class="fa-solid fa-broom"></i> Clean EXIF & Save All
+        <button id="processBtn" disabled class="w-full mt-2 py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Gizlilik Verilerini Sil ve İndir
         </button>
       </div>
     </section>
 
     <section class="lg:col-span-5">
-      <div class="glass-card rounded-2xl p-6 sticky top-24">
-        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
-            <i class="fa-solid fa-shield-cat text-cyan-400"></i> Sensitive Metadata Inspector
-          </h2>
-          <span id="selectedFileName" class="text-xs text-slate-400 truncate max-w-[150px]">Select a file</span>
+      <div class="glass-panel rounded-3xl p-6 sticky top-24">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-eye text-cyan-400 text-sm"></i>
+            <h3 class="text-sm font-bold text-slate-200">Gizlilik İncelemesi</h3>
+          </div>
+          <span id="selectedFileName" class="text-xs text-slate-400 truncate max-w-[140px] italic">Dosya seçilmedi</span>
         </div>
 
-        <div id="exifInspector" class="flex flex-col gap-3">
-          <p class="text-xs text-slate-500 text-center py-12">Click on any queued file on the left to inspect its hidden EXIF metadata.</p>
+        <div id="exifInspector" class="flex flex-col gap-3 min-h-[220px] justify-center">
+          <div class="text-center py-8 text-slate-500 text-xs leading-relaxed">
+            <i class="fa-regular fa-hand-pointer text-2xl text-slate-600 mb-3 block"></i>
+            Soldaki listeden bir fotoğrafa tıklayarak içerisindeki gizli verileri (Konum, Tarih, Cihaz) inceleyebilirsiniz.
+          </div>
         </div>
       </div>
     </section>
   </main>
+
+  <footer class="text-center py-6 text-xs text-slate-500 border-t border-slate-900">
+    EXIF-B-Gone &bull; Privacy First Open Source Tool
+  </footer>
 
   <script src="app.js"></script>
 </body>
