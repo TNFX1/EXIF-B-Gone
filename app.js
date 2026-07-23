@@ -1,6 +1,8 @@
-// NW.js Görev Çubuğu ve Pencere İkonunu Zorlama
+// NW.js Görev Çubuğu İkonunu Zorlama
 if (typeof nw !== 'undefined') {
-  nw.Window.get().setIcon('icon.ico');
+  try {
+    nw.Window.get().setIcon('icon.ico');
+  } catch(e) {}
 }
 
 let queue = [];
@@ -9,7 +11,6 @@ const CURRENT_VERSION = "1.1.0";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
-// Dil Paketleri
 const i18n = {
   tr: {
     subtitle: "Gizlilik ve EXIF Temizleme Asistanı",
@@ -29,7 +30,10 @@ const i18n = {
     btnCheckUpdate: "Güncellemeleri Kontrol Et",
     feedbackTitle: "Geri Bildirim Gönder",
     feedbackSub: "İstek, öneri veya karşılaştığınız hataları bize iletebilirsiniz.",
-    btnSendFeedback: "Gönder"
+    btnSendFeedback: "Gönder",
+    outFormat: "Çıktı Formatı",
+    resizeMax: "Max Genişlik (px)",
+    qualityLabel: "Kalite (%)"
   },
   en: {
     subtitle: "Privacy & EXIF Metadata Scrubber",
@@ -49,11 +53,32 @@ const i18n = {
     btnCheckUpdate: "Check for Updates",
     feedbackTitle: "Send Feedback",
     feedbackSub: "Share your ideas, suggestions, or bug reports with us.",
-    btnSendFeedback: "Submit"
+    btnSendFeedback: "Submit",
+    outFormat: "Export Format",
+    resizeMax: "Max Width (px)",
+    qualityLabel: "Quality (%)"
   }
 };
 
-let currentLang = localStorage.getItem('appLang') || 'tr';
+let currentLang = localStorage.getItem('appLang');
+
+// İlk Açılış Kontrolü
+const welcomeModal = document.getElementById('welcomeLangModal');
+if (!currentLang) {
+  welcomeModal.classList.remove('hidden');
+} else {
+  setLanguage(currentLang);
+}
+
+document.getElementById('selectTrBtn').addEventListener('click', () => {
+  setLanguage('tr');
+  welcomeModal.classList.add('hidden');
+});
+
+document.getElementById('selectEnBtn').addEventListener('click', () => {
+  setLanguage('en');
+  welcomeModal.classList.add('hidden');
+});
 
 function setLanguage(lang) {
   currentLang = lang;
@@ -64,6 +89,7 @@ function setLanguage(lang) {
       el.textContent = i18n[lang][key];
     }
   });
+  document.getElementById('langSelect').value = lang;
 }
 
 // Modal Kontrolleri
@@ -76,11 +102,9 @@ document.getElementById('closeSettingsBtn').addEventListener('click', () => sett
 document.getElementById('openFeedbackBtn').addEventListener('click', () => feedbackModal.classList.remove('hidden'));
 document.getElementById('closeFeedbackBtn').addEventListener('click', () => feedbackModal.classList.add('hidden'));
 
-const langSelect = document.getElementById('langSelect');
-langSelect.value = currentLang;
-langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+document.getElementById('langSelect').addEventListener('change', (e) => setLanguage(e.target.value));
 
-// Otomatik Güncelleme Kontrolü (GitHub API)
+// Otomatik Güncelleme
 document.getElementById('checkUpdateBtn').addEventListener('click', async () => {
   const statusText = document.getElementById('updateStatusText');
   statusText.classList.remove('hidden');
@@ -103,10 +127,9 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
   }
 });
 
-// Feedback Form Gönderimi (Formspree Entegrasyonu)
+// Feedback Formu
 document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  
   const email = document.getElementById('feedbackEmail').value;
   const message = document.getElementById('feedbackMessage').value;
   const sendBtn = document.getElementById('sendFeedbackBtn');
@@ -117,27 +140,21 @@ document.getElementById('feedbackForm').addEventListener('submit', async (e) => 
   try {
     const response = await fetch(FORMSPREE_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ email: email || 'Belirtilmedi / Unspecified', message: message })
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email: email || 'Unspecified', message: message })
     });
 
     if (response.ok) {
-      alert(currentLang === 'tr' ? 'Geri bildiriminiz başarıyla iletildi. Teşekkürler!' : 'Feedback sent successfully. Thank you!');
+      alert(currentLang === 'tr' ? 'Geri bildiriminiz başarıyla iletildi!' : 'Feedback sent successfully!');
       document.getElementById('feedbackForm').reset();
       feedbackModal.classList.add('hidden');
     } else {
-      alert(currentLang === 'tr' ? 'Gönderilirken bir hata oluştu. Lütfen tekrar deneyin.' : 'An error occurred. Please try again.');
+      alert(currentLang === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.');
     }
   } catch (error) {
-    alert(currentLang === 'tr' ? 'Bağlantı hatası oluştu.' : 'Connection error.');
+    alert(currentLang === 'tr' ? 'Bağlantı hatası.' : 'Connection error.');
   } finally {
     sendBtn.disabled = false;
     sendBtn.textContent = i18n[currentLang].btnSendFeedback;
   }
 });
-
-// Sayfa yüklendiğinde dili ayarla
-setLanguage(currentLang);
