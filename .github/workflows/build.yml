@@ -16,32 +16,48 @@ jobs:
     - name: Repo Cek
       uses: actions/checkout@v3
 
-    - name: NW.js Birlestir ve Ikondur
+    - name: NW.js Birlestir ve Hazirla
       shell: powershell
       run: |
         New-Item -ItemType Directory -Path build_dir
         New-Item -ItemType Directory -Path dist
 
+        # NW.js indir ve cikar
         Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
         Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
         
-        # icon.png dosyasının tam paketlenmesi:
+        # Uygulama dosyalarini paketle
         Compress-Archive -Path "index.html", "app.js", "package.json", "icon.png" -DestinationPath "build_dir\app.nw.zip"
         Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
 
         $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
         Copy-Item -Path "build_dir\app.nw" -Destination $nwPath.FullName
         
+        # NW.js exe ile uygulama paketini birlestir
         Set-Location -Path $nwPath.FullName
         cmd /c "copy /b nw.exe+app.nw EXIF-B-Gone.exe"
         Remove-Item nw.exe
         Remove-Item app.nw
 
+        # Portatif ZIP paketi olustur
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-    - name: Release Oluştur
+    # Inno Setup CLI ile Setup.exe (Kurulum Dosyasi) Olusturma
+    - name: Inno Setup ile Setup.exe Oluştur
+      shell: powershell
+      run: |
+        # Inno Setup indir ve sessizce kur
+        Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "is_setup.exe"
+        Start-Process -FilePath ".\is_setup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+        
+        # ISCC compiler ile installer.iss dosyasini derle
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+    - name: Release Oluştur (ZIP ve Setup.exe Yukle)
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/EXIF-B-Gone-Windows-x64.zip
+        files: |
+          dist/EXIF-B-Gone-Windows-x64.zip
+          dist/EXIF-B-Gone-Setup-x64.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
