@@ -1,3 +1,8 @@
+// NW.js Görev Çubuğu ve Pencere İkonunu Zorlama
+if (typeof nw !== 'undefined') {
+  nw.Window.get().setIcon('icon.ico');
+}
+
 let queue = [];
 let selectedIndex = null;
 const CURRENT_VERSION = "1.1.0";

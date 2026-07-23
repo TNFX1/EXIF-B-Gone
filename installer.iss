@@ -8,7 +8,6 @@ Compression=lzma2
 SolidCompression=yes
 OutputDir=dist
 OutputBaseFilename=EXIF-B-Gone-Setup-x64
-SetupIconFile=icon.ico
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
