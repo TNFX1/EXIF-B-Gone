@@ -13,10 +13,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Repo'yu Cek
+    - name: Repo Cek
       uses: actions/checkout@v3
 
-    - name: NW.js ve Proje Dosyalarini Birlestir
+    - name: NW.js Birlestir ve Ikondur
       shell: powershell
       run: |
         New-Item -ItemType Directory -Path build_dir
@@ -25,7 +25,7 @@ jobs:
         Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
         Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
         
-        # icon.png pakete dahil edildi:
+        # icon.png dosyasının tam paketlenmesi:
         Compress-Archive -Path "index.html", "app.js", "package.json", "icon.png" -DestinationPath "build_dir\app.nw.zip"
         Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
 
@@ -39,7 +39,7 @@ jobs:
 
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-    - name: Release Oluştur ve ZIP Yükle
+    - name: Release Oluştur
       uses: softprops/action-gh-release@v1
       with:
         files: dist/EXIF-B-Gone-Windows-x64.zip

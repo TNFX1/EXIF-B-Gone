@@ -1,14 +1,14 @@
 {
   "name": "exif-b-gone",
-  "version": "1.0.9",
+  "version": "1.1.1",
   "main": "index.html",
   "window": {
-    "title": "EXIF-B-Gone | Personal Privacy Shield",
+    "title": "EXIF-B-Gone | Dark Obsidian Edition",
     "icon": "icon.png",
-    "width": 1200,
-    "height": 800,
-    "min_width": 900,
-    "min_height": 600,
+    "width": 1240,
+    "height": 840,
+    "min_width": 950,
+    "min_height": 650,
     "position": "center"
   }
 }
