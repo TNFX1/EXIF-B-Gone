@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EXIF-B-Gone</title>
   
-  <link rel="icon" type="image/x-icon" href="icon.ico">
+  <link rel="icon" type="image/png" href="icon.png">
   <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -35,7 +35,7 @@
       </div>
       <div>
         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-          EXIF-B-Gone <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-rose-500 border border-rose-500/20">v1.1.0</span>
+          EXIF-B-Gone <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-rose-500 border border-rose-500/20">v1.2.0</span>
         </h1>
         <p class="text-xs text-slate-400" data-i18n="subtitle">Gizlilik ve EXIF Temizleme Asistanı</p>
       </div>
@@ -67,25 +67,45 @@
         </p>
       </div>
 
-      <div class="carbon-card rounded-3xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-1.5" data-i18n="outFormat">Çıktı Formatı</label>
-          <select id="exportFormat" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-rose-500">
-            <option value="original">Orijinal Formatı Korur</option>
-            <option value="image/jpeg">JPG / JPEG</option>
-            <option value="image/png">PNG</option>
-            <option value="image/webp">WebP</option>
-          </select>
+      <div class="carbon-card rounded-3xl p-5 flex flex-col gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400 block mb-1.5" data-i18n="outFormat">Çıktı Formatı</label>
+            <select id="exportFormat" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-rose-500">
+              <option value="original">Orijinal Formatı Korur</option>
+              <option value="image/jpeg">JPG / JPEG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400 block mb-1.5" data-i18n="resizeMax">Max Genişlik (px)</label>
+            <input type="number" id="maxWidthInput" placeholder="Orijinal (Örn: 1920)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-rose-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-[11px] font-semibold text-slate-400" data-i18n="qualityLabel">Kalite (%)</label>
+              <span id="qualityVal" class="text-[10px] text-rose-400 font-mono">90%</span>
+            </div>
+            <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.9" class="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-rose-500 mt-2">
+          </div>
         </div>
 
-        <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-1.5" data-i18n="resizeMax">Max Genişlik (px)</label>
-          <input type="number" id="maxWidthInput" placeholder="Orijinal (Örn: 1920)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-rose-500">
-        </div>
-
-        <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-1.5" data-i18n="qualityLabel">Kalite (%)</label>
-          <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.9" class="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-rose-500 mt-2">
+        <div class="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-2">
+          <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-rotate text-rose-500 mr-1"></i> Düzenleme Araçları:</span>
+          <div class="flex items-center gap-2">
+            <button id="rotateLeftBtn" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs transition-all flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left"></i> Sola
+            </button>
+            <button id="rotateRightBtn" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs transition-all flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right"></i> Sağa
+            </button>
+            <button id="flipHBtn" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs transition-all flex items-center gap-1">
+              <i class="fa-solid fa-arrows-left-right"></i> Çevir
+            </button>
+          </div>
         </div>
       </div>
 
@@ -96,7 +116,7 @@
             <h3 class="text-sm font-bold text-slate-200" data-i18n="queueTitle">İşlem Kuyruğu</h3>
             <span id="fileCount" class="text-xs px-2 py-0.5 rounded-full bg-slate-900 text-rose-400 font-semibold border border-rose-500/20">0</span>
           </div>
-          <button id="clearAllBtn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1">
+          <button id="clearAllBtn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer">
             <i class="fa-regular fa-trash-can"></i> <span data-i18n="btnClear">Temizle</span>
           </button>
         </div>
@@ -128,8 +148,8 @@
           <span id="selectedFileName" class="text-xs text-slate-500 truncate max-w-[130px] italic">Dosya seçilmedi</span>
         </div>
 
-        <div id="imagePreviewContainer" class="hidden w-full h-40 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden relative">
-          <img id="imagePreview" class="w-full h-full object-contain" src="" alt="Önizleme">
+        <div id="imagePreviewContainer" class="hidden w-full h-44 rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden relative flex items-center justify-center p-2">
+          <img id="imagePreview" class="max-w-full max-h-full object-contain transition-transform duration-200" src="" alt="Önizleme">
         </div>
 
         <div id="exifInspector" class="flex flex-col gap-3 min-h-[180px] justify-center">
@@ -182,7 +202,7 @@
         <div class="flex flex-col gap-2 pt-2 border-t border-slate-800/60">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-slate-300" data-i18n="updateLabel">Güncelleme Durumu</span>
-            <span id="currentVersionText" class="text-xs text-slate-500">v1.1.0</span>
+            <span id="currentVersionText" class="text-xs text-slate-500">v1.2.0</span>
           </div>
           <button id="checkUpdateBtn" class="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-rose-400 text-xs font-medium transition-all flex items-center justify-center gap-2">
             <i class="fa-solid fa-rotate"></i> <span data-i18n="btnCheckUpdate">Güncellemeleri Kontrol Et</span>

@@ -1,13 +1,13 @@
 if (typeof nw !== 'undefined') {
   try {
     const win = nw.Window.get();
-    win.setIcon('icon.ico');
+    win.setIcon('icon.png');
   } catch(e) {}
 }
 
 let queue = [];
 let selectedIndex = null;
-const CURRENT_VERSION = "1.1.0";
+const CURRENT_VERSION = "1.2.0";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
@@ -135,10 +135,13 @@ async function handleFiles(files) {
     } catch (err) {}
     
     queue.push({
+      id: Date.now() + Math.random(),
       file: file,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      exif: exifData
+      exif: exifData,
+      rotation: 0,
+      flipH: false
     });
   }
   
@@ -190,8 +193,8 @@ function updateUI() {
           <p class="text-[10px] text-slate-500">${item.size}</p>
         </div>
       </div>
-      <button class="remove-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors" data-index="${index}">
-        <i class="fa-solid fa-xmark"></i>
+      <button type="button" class="remove-btn p-2 text-slate-500 hover:text-rose-400 transition-colors">
+        <i class="fa-solid fa-xmark text-sm"></i>
       </button>
     `;
 
@@ -201,8 +204,10 @@ function updateUI() {
       }
     });
 
-    div.querySelector('.remove-btn').addEventListener('click', (e) => {
+    const removeBtn = div.querySelector('.remove-btn');
+    removeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       removeFromQueue(index);
     });
 
@@ -220,6 +225,7 @@ function selectFile(index) {
   const previewContainer = document.getElementById('imagePreviewContainer');
   const previewImg = document.getElementById('imagePreview');
   previewImg.src = URL.createObjectURL(item.file);
+  applyPreviewTransform();
   previewContainer.classList.remove('hidden');
 
   const exifInspector = document.getElementById('exifInspector');
@@ -244,18 +250,56 @@ function selectFile(index) {
   updateUI();
 }
 
-function removeFromQueue(index) {
-  queue.splice(index, 1);
-  if (selectedIndex === index) {
-    selectedIndex = queue.length > 0 ? 0 : null;
-  } else if (selectedIndex > index) {
-    selectedIndex--;
-  }
-  updateUI();
-  if (selectedIndex !== null) selectFile(selectedIndex);
+function applyPreviewTransform() {
+  if (selectedIndex === null || !queue[selectedIndex]) return;
+  const item = queue[selectedIndex];
+  const previewImg = document.getElementById('imagePreview');
+  const scaleH = item.flipH ? -1 : 1;
+  previewImg.style.transform = `rotate(${item.rotation}deg) scaleX(${scaleH})`;
 }
 
-document.getElementById('clearAllBtn').addEventListener('click', () => {
+document.getElementById('rotateLeftBtn').addEventListener('click', () => {
+  if (selectedIndex !== null && queue[selectedIndex]) {
+    queue[selectedIndex].rotation = (queue[selectedIndex].rotation - 90) % 360;
+    applyPreviewTransform();
+  }
+});
+
+document.getElementById('rotateRightBtn').addEventListener('click', () => {
+  if (selectedIndex !== null && queue[selectedIndex]) {
+    queue[selectedIndex].rotation = (queue[selectedIndex].rotation + 90) % 360;
+    applyPreviewTransform();
+  }
+});
+
+document.getElementById('flipHBtn').addEventListener('click', () => {
+  if (selectedIndex !== null && queue[selectedIndex]) {
+    queue[selectedIndex].flipH = !queue[selectedIndex].flipH;
+    applyPreviewTransform();
+  }
+});
+
+document.getElementById('qualityRange').addEventListener('input', (e) => {
+  document.getElementById('qualityVal').textContent = Math.round(e.target.value * 100) + '%';
+});
+
+function removeFromQueue(index) {
+  queue.splice(index, 1);
+  if (queue.length === 0) {
+    selectedIndex = null;
+  } else if (selectedIndex >= queue.length) {
+    selectedIndex = queue.length - 1;
+  }
+  updateUI();
+  if (selectedIndex !== null) {
+    selectFile(selectedIndex);
+  } else {
+    resetInspector();
+  }
+}
+
+document.getElementById('clearAllBtn').addEventListener('click', (e) => {
+  e.preventDefault();
   queue = [];
   selectedIndex = null;
   updateUI();
@@ -272,20 +316,32 @@ async function processImage(item) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
+      let origW = img.width;
+      let origH = img.height;
+
+      const rot = Math.abs(item.rotation % 360);
+      const is90 = rot === 90 || rot === 270;
+
+      let renderW = is90 ? origH : origW;
+      let renderH = is90 ? origW : origH;
 
       const maxWidth = parseInt(document.getElementById('maxWidthInput').value);
-      if (maxWidth && width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
+      if (maxWidth && renderW > maxWidth) {
+        renderH = Math.round((renderH * maxWidth) / renderW);
+        renderW = maxWidth;
       }
 
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = renderW;
+      canvas.height = renderH;
 
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((item.rotation * Math.PI) / 180);
+      if (item.flipH) ctx.scale(-1, 1);
+
+      const drawW = is90 ? canvas.height : canvas.width;
+      const drawH = is90 ? canvas.width : canvas.height;
+      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
       const exportFormatSelect = document.getElementById('exportFormat').value;
       const targetFormat = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
@@ -346,9 +402,22 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
     const latestVersion = data.tag_name.replace('v', '');
 
     if (latestVersion !== CURRENT_VERSION) {
+      const setupAsset = data.assets.find(a => a.name.endsWith('.exe'));
+      const downloadUrl = setupAsset ? setupAsset.browser_download_url : data.html_url;
+
       statusText.innerHTML = currentLang === 'tr' 
-        ? `<span class="text-emerald-400 font-semibold">Yeni sürüm mevcut (${data.tag_name})!</span> <a href="${data.html_url}" target="_blank" class="underline text-rose-400">İndir</a>`
-        : `<span class="text-emerald-400 font-semibold">New version available (${data.tag_name})!</span> <a href="${data.html_url}" target="_blank" class="underline text-rose-400">Download</a>`;
+        ? `<button id="autoInstallBtn" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all">Sürüm ${data.tag_name} İndir ve Kur</button>`
+        : `<button id="autoInstallBtn" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all">Download & Install ${data.tag_name}</button>`;
+
+      document.getElementById('autoInstallBtn').addEventListener('click', async () => {
+        statusText.textContent = currentLang === 'tr' ? "Setup indiriliyor ve başlatılıyor..." : "Downloading and launching setup...";
+        
+        if (typeof nw !== 'undefined' && nw.Shell) {
+          nw.Shell.openExternal(downloadUrl);
+        } else {
+          window.location.href = downloadUrl;
+        }
+      });
     } else {
       statusText.textContent = currentLang === 'tr' ? "Uygulamanız güncel!" : "App is up to date!";
     }

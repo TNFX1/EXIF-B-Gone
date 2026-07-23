@@ -1,14 +1,15 @@
 {
   "name": "exif-b-gone",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "index.html",
   "window": {
     "title": "EXIF-B-Gone",
-    "icon": "icon.ico",
+    "icon": "icon.png",
     "width": 1280,
     "height": 850,
     "min_width": 980,
     "min_height": 680,
-    "position": "center"
+    "position": "center",
+    "frame": true
   }
 }
