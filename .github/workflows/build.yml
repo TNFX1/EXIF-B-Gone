@@ -26,8 +26,9 @@ jobs:
         Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
         Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
         
-        # Uygulama dosyalarini paketle
-        Compress-Archive -Path "index.html", "app.js", "package.json", "icon.png", "icon.ico" -DestinationPath "build_dir\app.nw.zip"
+        # Sadece var olan uygulama dosyalarini otomatik tespit et ve paketle
+        $filesToPack = Get-ChildItem -Path "index.html", "app.js", "package.json", "icon.*" -ErrorAction SilentlyContinue
+        Compress-Archive -Path $filesToPack -DestinationPath "build_dir\app.nw.zip"
         Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
 
         $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
