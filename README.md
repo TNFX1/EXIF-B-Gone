@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="icon.ico" alt="EXIF-B-Gone Logo" width="128" height="128">
+  <img src="icon.png" alt="EXIF-B-Gone Logo" width="128" height="128">
 
   # 🛡️ EXIF-B-Gone
 
@@ -8,7 +8,7 @@
   
   *Easily inspect and strip sensitive metadata like GPS location, capture dates, hardware serial numbers, and camera settings from your images — 100% locally on your device.*
 
-  [![Version](https://img.shields.io/badge/version-1.1.0-rose.svg?style=for-the-badge)](https://github.com/)
+  [![Version](https://img.shields.io/badge/version-1.1.0-rose.svg?style=for-the-badge)](https://github.com/TNFX1/EXIF-B-Gone)
   [![License](https://img.shields.io/badge/license-MIT-emerald.svg?style=for-the-badge)](LICENSE)
   [![Privacy](https://img.shields.io/badge/privacy-100%25%20Client--Side-blue.svg?style=for-the-badge)](#-privacy--security)
   [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web-purple.svg?style=for-the-badge)](#-installation)
@@ -31,6 +31,8 @@ Photos shared on social media and the web often contain hidden metadata includin
 - 🗺️ **GPS Map Quick-Link:** Directly open coordinates on Google Maps to see what location data your photo is leaking.
 - 🖼️ **Image Preview:** Built-in previewer to verify photos in your queue before processing.
 - 🧹 **Deep Scrubbing:** Permanently strips GPS, timestamps, serial numbers, and software signatures.
+- 📐 **Image Resizing & Format Conversion:** Adjust image width, export as JPG/PNG/WebP, and control compression quality.
+- 🌐 **Multi-Language Support:** First-launch language picker with built-in Turkish and English options.
 - 📦 **Batch Operations & ZIP Export:** Process multiple photos at once and download them individually or as a single `.zip` archive.
 - 🔒 **100% Offline & Private:** Your photos **never** leave your computer. All processing happens locally inside your device's memory.
 
