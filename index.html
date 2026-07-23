@@ -1,112 +1,87 @@
 <!DOCTYPE html>
-<html lang="tr" class="dark">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXIF-B-Gone | Privacy-First EXIF Remover & Viewer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { 500: '#06b6d4', 600: '#0891b2' },
-                        darkBg: '#0b0f19',
-                        cardBg: '#111827',
-                        borderBg: '#1f2937'
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXIF-B-Gone | Privacy-First EXIF Remover</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
 </head>
-<body class="bg-darkBg text-slate-100 min-h-screen font-['Inter'] antialiased selection:bg-cyan-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
 
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <i class="fa-solid fa-shield-halved text-white text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-none tracking-wide text-white">EXIF-B-Gone</h1>
-                    <span class="text-[10px] text-cyan-400 font-semibold tracking-wider uppercase">Local Privacy Utility</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4 text-xs font-medium text-slate-400">
-                <span class="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> 100% Client-Side
-                </span>
-            </div>
+  <header class="border-b border-slate-800/60 bg-slate-900/40 backdrop-blur-md px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <i class="fa-solid fa-shield-halved text-slate-950 text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">EXIF-B-Gone</h1>
+        <p class="text-xs text-slate-400 font-medium">Privacy-First Local Metadata Eraser</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      100% Client-Side
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <section class="lg:col-span-7 flex flex-col gap-6">
+      
+      <div id="dropzone" class="glass-card border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 hover:bg-slate-900/40 group">
+        <input type="file" id="fileInput" class="hidden" multiple accept="image/jpeg,image/png,image/webp">
+        <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 transition-all">
+          <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-cyan-400"></i>
         </div>
-    </header>
+        <h3 class="text-base font-semibold text-slate-200 mb-1">Drag & Drop images here or <span class="text-cyan-400 underline decoration-cyan-400/40">Browse</span></h3>
+        <p class="text-xs text-slate-400">Supports JPEG, PNG, WebP files (Processed entirely in RAM)</p>
+      </div>
 
-    <main class="max-w-6xl mx-auto px-6 py-8">
-
-        <div class="text-center max-w-2xl mx-auto mb-8">
-            <h2 class="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
-                Fotoğraf Metadata & EXIF Temizleyici
-            </h2>
-            <p class="mt-3 text-slate-400 text-sm leading-relaxed">
-                Konum, cihaz modeli, çekim tarihi gibi hassas gizlilik verilerini görüntüleyin ve tek tıkla tamamen temizleyin. Dosyalarınız hiçbir sunucuya yüklenmez.
-            </p>
-        </div>
-
-        <div id="drop-zone" class="relative group cursor-pointer border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl p-10 text-center transition-all duration-300 bg-slate-900/40 hover:bg-slate-900/80 shadow-xl backdrop-blur-sm">
-            <input type="file" id="file-input" multiple accept="image/jpeg, image/png, image/webp" class="hidden">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800 border border-slate-700/80 flex items-center justify-center group-hover:scale-110 group-hover:border-cyan-500/50 transition-all duration-300 shadow-inner">
-                <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-cyan-400 transition-colors"></i>
-            </div>
-            <h3 class="text-base font-semibold text-slate-200 mb-1">Resimleri buraya sürükleyin ya da <span class="text-cyan-400 underline decoration-2 underline-offset-4">göz atın</span></h3>
-            <p class="text-xs text-slate-500">JPEG, JPG, PNG ve WebP dosyaları desteklenir</p>
+      <div class="glass-card rounded-2xl p-5 flex flex-col gap-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <h2 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-cyan-400"></i> Uploaded Queue (<span id="fileCount">0</span>)
+          </h2>
+          <button id="clearAllBtn" class="text-xs text-slate-400 hover:text-rose-400 transition-colors">Clear All</button>
         </div>
 
-        <div id="app-content" class="mt-8 hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <div class="lg:col-span-7 space-y-4">
-                <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-                    <h4 class="font-semibold text-sm text-slate-300 flex items-center gap-2">
-                        <i class="fa-solid fa-images text-cyan-400"></i> Yüklenen Dosyalar (<span id="file-count">0</span>)
-                    </h4>
-                    <button id="clear-all-btn" class="text-xs text-slate-500 hover:text-red-400 transition-colors">Tümünü Temizle</button>
-                </div>
-                
-                <div id="file-list" class="space-y-3 max-h-[450px] overflow-y-auto pr-2">
-                    </div>
-
-                <div class="pt-4">
-                    <button id="clean-all-btn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 text-sm">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Tümünün EXIF Verilerini Temizle ve İndir
-                    </button>
-                </div>
-            </div>
-
-            <div class="lg:col-span-5">
-                <div class="bg-cardBg border border-slate-800 rounded-2xl p-5 sticky top-24 shadow-xl">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                        <h4 class="font-semibold text-sm text-slate-300 flex items-center gap-2">
-                            <i class="fa-solid fa-circle-info text-cyan-400"></i> EXIF Detay Ayrıntıları
-                        </h4>
-                        <span id="inspect-filename" class="text-xs text-slate-500 truncate max-w-[150px]">Seçim Yok</span>
-                    </div>
-
-                    <div id="exif-container" class="space-y-2 text-xs">
-                        <div class="text-center py-10 text-slate-500">
-                            <i class="fa-solid fa-magnifying-glass text-2xl mb-2 opacity-50"></i>
-                            <p>EXIF verilerini görüntülemek için soldaki bir resme tıklayın.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div id="fileList" class="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
+          <p id="emptyState" class="text-xs text-slate-500 text-center py-8">No files uploaded yet.</p>
         </div>
 
-    </main>
+        <button id="processBtn" disabled class="w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-broom"></i> Clean EXIF & Save All
+        </button>
+      </div>
+    </section>
 
-    <script src="app.js"></script>
+    <section class="lg:col-span-5">
+      <div class="glass-card rounded-2xl p-6 sticky top-24">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-shield-cat text-cyan-400"></i> Sensitive Metadata Inspector
+          </h2>
+          <span id="selectedFileName" class="text-xs text-slate-400 truncate max-w-[150px]">Select a file</span>
+        </div>
+
+        <div id="exifInspector" class="flex flex-col gap-3">
+          <p class="text-xs text-slate-500 text-center py-12">Click on any queued file on the left to inspect its hidden EXIF metadata.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
 </body>
 </html>
