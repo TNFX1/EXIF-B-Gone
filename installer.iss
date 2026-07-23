@@ -1,6 +1,6 @@
 [Setup]
 AppName=EXIF-B-Gone
-AppVersion=1.2.0
+AppVersion=1.2.1
 DefaultDirName={autopf}\EXIF-B-Gone
 DefaultGroupName=EXIF-B-Gone
 UninstallDisplayIcon={app}\icon.ico

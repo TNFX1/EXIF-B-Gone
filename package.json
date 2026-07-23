@@ -1,6 +1,6 @@
 {
   "name": "exif-b-gone",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "index.html",
   "window": {
     "title": "EXIF-B-Gone",

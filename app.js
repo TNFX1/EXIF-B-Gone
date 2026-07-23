@@ -7,7 +7,7 @@ if (typeof nw !== 'undefined') {
 
 let queue = [];
 let selectedIndex = null;
-const CURRENT_VERSION = "1.2.0";
+const CURRENT_VERSION = "1.2.1";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
@@ -135,7 +135,7 @@ async function handleFiles(files) {
     } catch (err) {}
     
     queue.push({
-      id: Date.now() + Math.random(),
+      id: 'img_' + Math.random().toString(36).substr(2, 9),
       file: file,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
@@ -166,8 +166,8 @@ function updateUI() {
     fileList.appendChild(emptyState);
     processBtn.disabled = true;
     zipBtn.disabled = true;
-    processBtn.className = "flex-1 py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
-    zipBtn.className = "py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+    processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+    zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
     resetInspector();
     return;
   }
@@ -177,42 +177,62 @@ function updateUI() {
 
   processBtn.disabled = false;
   zipBtn.disabled = false;
-  processBtn.className = "flex-1 py-3.5 px-5 rounded-2xl font-semibold text-sm bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
-  zipBtn.className = "py-3.5 px-5 rounded-2xl font-semibold text-sm bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
+  processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
+  zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
 
   queue.forEach((item, index) => {
     const div = document.createElement('div');
     const isSelected = selectedIndex === index;
-    div.className = `p-3 rounded-2xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-slate-800/80 border-rose-500/50' : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'}`;
+    div.className = `p-2.5 rounded-2xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-slate-800/80 border-rose-500/50' : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'}`;
     
     div.innerHTML = `
-      <div class="flex items-center gap-3 truncate">
+      <div class="flex items-center gap-3 truncate pointer-events-none">
         <i class="fa-regular fa-image text-slate-400"></i>
         <div class="truncate">
           <p class="text-xs font-semibold text-slate-200 truncate">${item.name}</p>
           <p class="text-[10px] text-slate-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" class="remove-btn p-2 text-slate-500 hover:text-rose-400 transition-colors">
-        <i class="fa-solid fa-xmark text-sm"></i>
+      <button type="button" data-id="${item.id}" class="delete-item-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
+        <i class="fa-solid fa-xmark text-sm pointer-events-none"></i>
       </button>
     `;
 
     div.addEventListener('click', (e) => {
-      if (!e.target.closest('.remove-btn')) {
+      if (!e.target.closest('.delete-item-btn')) {
         selectFile(index);
       }
     });
 
-    const removeBtn = div.querySelector('.remove-btn');
-    removeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      removeFromQueue(index);
-    });
-
     fileList.appendChild(div);
   });
+
+  document.querySelectorAll('.delete-item-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const itemId = btn.getAttribute('data-id');
+      removeById(itemId);
+    });
+  });
+}
+
+function removeById(id) {
+  const targetIndex = queue.findIndex(item => item.id === id);
+  if (targetIndex !== -1) {
+    queue.splice(targetIndex, 1);
+    if (queue.length === 0) {
+      selectedIndex = null;
+    } else if (selectedIndex >= queue.length) {
+      selectedIndex = queue.length - 1;
+    }
+    updateUI();
+    if (selectedIndex !== null && queue[selectedIndex]) {
+      selectFile(selectedIndex);
+    } else {
+      resetInspector();
+    }
+  }
 }
 
 function selectFile(index) {
@@ -232,7 +252,7 @@ function selectFile(index) {
   if (!item.exif || Object.keys(item.exif).length === 0) {
     exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Bu fotoğrafta gizli EXIF verisi bulunamadı.' : 'No EXIF metadata found in this image.'}</div>`;
   } else {
-    let html = '<div class="flex flex-col gap-2 max-h-48 overflow-y-auto custom-scroll pr-1">';
+    let html = '<div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">';
     for (const [key, val] of Object.entries(item.exif)) {
       if (typeof val !== 'object' && val !== undefined) {
         html += `
@@ -282,21 +302,6 @@ document.getElementById('flipHBtn').addEventListener('click', () => {
 document.getElementById('qualityRange').addEventListener('input', (e) => {
   document.getElementById('qualityVal').textContent = Math.round(e.target.value * 100) + '%';
 });
-
-function removeFromQueue(index) {
-  queue.splice(index, 1);
-  if (queue.length === 0) {
-    selectedIndex = null;
-  } else if (selectedIndex >= queue.length) {
-    selectedIndex = queue.length - 1;
-  }
-  updateUI();
-  if (selectedIndex !== null) {
-    selectFile(selectedIndex);
-  } else {
-    resetInspector();
-  }
-}
 
 document.getElementById('clearAllBtn').addEventListener('click', (e) => {
   e.preventDefault();
@@ -392,8 +397,9 @@ document.getElementById('closeFeedbackBtn').addEventListener('click', () => feed
 document.getElementById('langSelect').addEventListener('change', (e) => setLanguage(e.target.value));
 
 document.getElementById('checkUpdateBtn').addEventListener('click', async () => {
+  const container = document.getElementById('updateStatusContainer');
   const statusText = document.getElementById('updateStatusText');
-  statusText.classList.remove('hidden');
+  container.classList.remove('hidden');
   statusText.textContent = currentLang === 'tr' ? "Kontrol ediliyor..." : "Checking for updates...";
 
   try {
@@ -405,12 +411,12 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
       const setupAsset = data.assets.find(a => a.name.endsWith('.exe'));
       const downloadUrl = setupAsset ? setupAsset.browser_download_url : data.html_url;
 
-      statusText.innerHTML = currentLang === 'tr' 
-        ? `<button id="autoInstallBtn" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all">Sürüm ${data.tag_name} İndir ve Kur</button>`
-        : `<button id="autoInstallBtn" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all">Download & Install ${data.tag_name}</button>`;
+      container.innerHTML = currentLang === 'tr' 
+        ? `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all cursor-pointer">Sürüm ${data.tag_name} İndir ve Kur</button>`
+        : `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all cursor-pointer">Download & Install ${data.tag_name}</button>`;
 
       document.getElementById('autoInstallBtn').addEventListener('click', async () => {
-        statusText.textContent = currentLang === 'tr' ? "Setup indiriliyor ve başlatılıyor..." : "Downloading and launching setup...";
+        container.innerHTML = `<p class="text-[11px] text-slate-400 text-center">${currentLang === 'tr' ? 'Setup indiriliyor ve başlatılıyor...' : 'Downloading and launching setup...'}</p>`;
         
         if (typeof nw !== 'undefined' && nw.Shell) {
           nw.Shell.openExternal(downloadUrl);
@@ -419,10 +425,10 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
         }
       });
     } else {
-      statusText.textContent = currentLang === 'tr' ? "Uygulamanız güncel!" : "App is up to date!";
+      container.innerHTML = `<p class="text-[11px] text-emerald-400 text-center">${currentLang === 'tr' ? 'Uygulamanız güncel! (v' + CURRENT_VERSION + ')' : 'App is up to date! (v' + CURRENT_VERSION + ')'}</p>`;
     }
   } catch (err) {
-    statusText.textContent = currentLang === 'tr' ? "Güncelleme kontrolü başarısız oldu." : "Failed to check for updates.";
+    container.innerHTML = `<p class="text-[11px] text-rose-400 text-center">${currentLang === 'tr' ? 'Güncelleme kontrolü başarısız oldu.' : 'Failed to check for updates.'}</p>`;
   }
 });
 
