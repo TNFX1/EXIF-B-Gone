@@ -11,10 +11,10 @@ const clearAllBtn = document.getElementById('clearAllBtn');
 const exifInspector = document.getElementById('exifInspector');
 const selectedFileName = document.getElementById('selectedFileName');
 
-// Trigger Click
+// Tıklama ile Dosya Seçimi
 dropzone.addEventListener('click', () => fileInput.click());
 
-// Drag and Drop Events
+// Sürükle - Bırak Olayları
 ['dragenter', 'dragover'].forEach(event => {
   dropzone.addEventListener(event, (e) => {
     e.preventDefault();
@@ -45,31 +45,40 @@ async function handleFiles(files) {
       gps: true,
       exif: true,
       tiff: true,
-      jfif: true
+      jfif: true,
+      iptc: true,
+      xmp: true
     }) || {};
 
-    const cleanExif = filterSensitiveMetadata(metadata);
+    const sensitiveData = filterSensitiveMetadata(metadata);
 
     queue.push({
       file,
-      metadata: cleanExif,
-      isCleaned: Object.keys(cleanExif).length === 0
+      metadata: sensitiveData,
+      isCleaned: Object.keys(sensitiveData).length === 0
     });
   }
   updateUI();
 }
 
-// Sadece Hassas/Kişisel Verileri Süz
+// Sadece Gerçek Hassas / Gizlilik İçeren EXIF Verilerini Filtrele
 function filterSensitiveMetadata(meta) {
   const sensitiveKeys = [
-    'Make', 'Model', 'Software', 'DateTimeOriginal', 'CreateDate',
-    'ModifyDate', 'latitude', 'longitude', 'GPSLatitude', 'GPSLongitude',
-    'Artist', 'Copyright', 'OwnerName', 'SerialNumber', 'LensModel'
+    // Cihaz ve Yazılım
+    'Make', 'Model', 'Software', 'HostComputer', 'ProcessingSoftware',
+    // Tarih ve Zaman
+    'DateTimeOriginal', 'CreateDate', 'ModifyDate', 'OffsetTimeOriginal',
+    // Konum Bilgileri (GPS)
+    'latitude', 'longitude', 'GPSLatitude', 'GPSLongitude', 'GPSAltitude', 'GPSSpeed',
+    // Kişisel / Telif Bilgileri
+    'Artist', 'Copyright', 'OwnerName', 'CameraOwnerName', 'SerialNumber', 'BodySerialNumber', 'LensModel', 'LensSerialNumber',
+    // Teknik Çekim Parametreleri
+    'ExposureTime', 'FNumber', 'ISO', 'FocalLength', 'Flash', 'ExposureMode'
   ];
 
   let filtered = {};
   for (let key in meta) {
-    if (sensitiveKeys.includes(key) || key.toLowerCase().includes('gps')) {
+    if (sensitiveKeys.includes(key) || key.toLowerCase().includes('gps') || key.toLowerCase().includes('date')) {
       filtered[key] = meta[key];
     }
   }
@@ -174,7 +183,7 @@ clearAllBtn.addEventListener('click', () => {
   updateUI();
 });
 
-// Canvas Yöntemi ile Temiz EXIF Oluştur ve İndir
+// Canvas Üzerinden Yeniden Çizerek Sıfır EXIF Dosya İndirme
 processBtn.addEventListener('click', () => {
   queue.forEach(item => {
     const img = new Image();
