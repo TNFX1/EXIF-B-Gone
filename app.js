@@ -4,11 +4,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
   const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
+  // NW.js veya Node.js ortamı kontrolü
+  const isNw = typeof nw !== 'undefined' || (typeof process !== 'undefined' && process.versions && process.versions.nw);
+  let fs, path;
+  if (isNw) {
+    try {
+      fs = require('fs');
+      path = require('path');
+    } catch(e) {}
+  }
+
   let queue = [];
   let selectedIndex = -1;
   let currentRotation = 0;
   let currentFlip = false;
-  let currentLang = localStorage.getItem('app_lang');
+  let currentLang = localStorage.getItem('app_lang') || 'en';
 
   const i18n = {
     en: {
@@ -73,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnZip: "ZIP Olarak İndir",
       inspectorTitle: "Gizlilik İnceleyicisi",
       inspectorEmpty: "Gizli verileri görmek için bir dosya seçin.",
-      inspectorClean: "Dosya tamamen temiz! Hiçbir gizli veri bulunamadı.",
+      inspectorClean: "Hassas gizlilik verisi (EXIF/GPS/IPTC) bulunamadı! Temiz.",
       feedbackTitle: "Geri Bildirim Gönder",
       phFeedbackEmail: "E-postanız (isteğe bağlı)",
       phFeedbackMessage: "Düşüncelerinizi veya karşılaştığınız sorunları yazın...",
@@ -94,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const inspectorPreview = document.getElementById('inspectorPreview');
   const metadataTable = document.getElementById('metadataTable');
-  const inspectorEmptyState = document.getElementById('inspectorEmptyState');
   
   const rotateLeftBtn = document.getElementById('rotateLeftBtn');
   const rotateRightBtn = document.getElementById('rotateRightBtn');
@@ -107,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const maxWidthInput = document.getElementById('maxWidthInput');
   const maxHeightInput = document.getElementById('maxHeightInput');
 
-  // Modals & Controls
+  // Modals
   const welcomeModal = document.getElementById('welcomeModal');
   const welcomeLangEN = document.getElementById('welcomeLangEN');
   const welcomeLangTR = document.getElementById('welcomeLangTR');
@@ -125,8 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const feedbackForm = document.getElementById('feedbackForm');
   const feedbackStatus = document.getElementById('feedbackStatus');
 
-  // First Time Check
-  if (!currentLang) {
+  if (!localStorage.getItem('app_lang')) {
     welcomeModal?.classList.remove('hidden');
   } else {
     updateLanguage(currentLang);
@@ -162,12 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Settings Modal Controls
   settingsBtn?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
   closeSettingsBtn?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
   langSelect?.addEventListener('change', (e) => updateLanguage(e.target.value));
 
-  // Check Update via Github API
   checkUpdateBtn?.addEventListener('click', async () => {
     if (updateStatus) updateStatus.textContent = "Checking Github releases...";
     try {
@@ -195,9 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // File Upload Logic
   if (dropZone && fileInput) {
     dropZone.addEventListener('click', (e) => {
-      if (e.target !== fileInput) {
-        fileInput.click();
-      }
+      if (e.target !== fileInput) fileInput.click();
     });
 
     fileInput.addEventListener('change', () => {
@@ -234,15 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }, false);
   }
 
-  // Video Metadata Parser (via MediaInfo or Basic Attributes)
   async function parseVideoMetadata(file) {
-    let meta = {
-      "File Name": file.name,
-      "File Size": formatBytes(file.size),
-      "File Type": file.type || "video/mp4",
-      "Last Modified": new Date(file.lastModified).toLocaleString()
-    };
-
+    let meta = {};
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.preload = 'metadata';
@@ -255,6 +252,28 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       video.onerror = () => resolve(meta);
     });
+  }
+
+  // Sadece hassas/gizlilik riski içeren EXIF ve anahtarları filtrele
+  function filterPrivacySensitiveMetadata(rawMeta) {
+    if (!rawMeta || typeof rawMeta !== 'object') return {};
+
+    const sensitiveKeys = [
+      'latitude', 'longitude', 'gps', 'GPSLatitude', 'GPSLongitude', 'GPSPosition', 'GPSAltitude',
+      'Make', 'Model', 'Software', 'ModifyDate', 'CreateDate', 'DateTimeOriginal', 'OffsetTime',
+      'Artist', 'Copyright', 'OwnerName', 'SerialNumber', 'InternalSerialNumber', 'LensModel', 'LensSerialNumber',
+      'UserComment', 'ImageDescription', 'XPTitle', 'XPComment', 'XPAuthor'
+    ];
+
+    let filtered = {};
+    Object.entries(rawMeta).forEach(([key, val]) => {
+      const isSensitive = sensitiveKeys.some(sk => key.toLowerCase().includes(sk.toLowerCase()));
+      if (isSensitive && val !== undefined && val !== null) {
+        filtered[key] = val;
+      }
+    });
+
+    return filtered;
   }
 
   async function handleFiles(files) {
@@ -270,7 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isImg) {
         try {
           if (typeof exifr !== 'undefined') {
-            parsedMeta = await exifr.parse(file, { tiff: true, xmp: true, icc: true, iptc: true, jfif: true, gps: true });
+            const raw = await exifr.parse(file, { tiff: true, xmp: true, icc: true, iptc: true, jfif: true, gps: true });
+            parsedMeta = filterPrivacySensitiveMetadata(raw);
           }
         } catch (err) {
           console.warn("Exifr parse warning:", err);
@@ -422,7 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetInspector() {
     if (inspectorPreview) inspectorPreview.innerHTML = `<span class="text-xs text-zinc-600" data-i18n="inspectorEmpty">${i18n[currentLang || 'en'].inspectorEmpty}</span>`;
     if (metadataTable) metadataTable.innerHTML = '';
-    if (inspectorEmptyState) inspectorEmptyState.classList.remove('hidden');
     updateExportFormatOptions('image');
   }
 
@@ -433,8 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const item = queue[selectedIndex];
-    if (inspectorEmptyState) inspectorEmptyState.classList.add('hidden');
-
     updateExportFormatOptions(item.type);
 
     const transformStyle = `transform: rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1}); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);`;
@@ -480,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
   flipHBtn?.addEventListener('click', () => { currentFlip = !currentFlip; renderInspector(); });
   resetTransformBtn?.addEventListener('click', () => { currentRotation = 0; currentFlip = false; renderInspector(); });
 
-  // Processing Functions
+  // Resim / Video İşleme Mantığı
   async function processImage(item) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -611,6 +628,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Hızlı Kaydetme İndirme Fonksiyonu
+  async function triggerFastDownload(blob, fileName) {
+    if (isNw && fs) {
+      // NW.js Yerel İndirme Penceresi (Işık Hızında)
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.nwsaveas = fileName;
+      
+      input.addEventListener('change', (evt) => {
+        const destPath = input.value;
+        if (destPath) {
+          fs.writeFileSync(destPath, buffer);
+        }
+      });
+      input.click();
+    } else {
+      // Standart Web Taraması İndirme
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+  }
+
   processBtn?.addEventListener('click', async () => {
     for (const item of queue) {
       let result;
@@ -620,10 +665,8 @@ document.addEventListener('DOMContentLoaded', () => {
         result = await processVideo(item);
       }
       
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(result.blob);
-      a.download = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${result.format}`;
-      a.click();
+      const fileName = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${result.format}`;
+      await triggerFastDownload(result.blob, fileName);
     }
   });
 
@@ -642,10 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const content = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(content);
-    a.download = "cleaned_files.zip";
-    a.click();
+    await triggerFastDownload(content, "cleaned_files.zip");
   });
 
   // Feedback Modal Controls
