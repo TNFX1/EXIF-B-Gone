@@ -73,9 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // DOM Elements
+  // DOM Elements (index.html ile tam eşleşen ID'ler)
   const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('fileInput');
+  const fileInput = document.getElementById('file-input');
   const queueContainer = document.getElementById('queueContainer');
   const queueCount = document.getElementById('queueCount');
   const clearQueueBtn = document.getElementById('clearQueueBtn');
@@ -136,32 +136,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // File Drop
-  dropZone?.addEventListener('click', () => fileInput?.click());
-  
-  dropZone?.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('border-rose-500/50', 'bg-rose-500/5');
-  });
+  // File Drop & Click Logic (Düzeltildi)
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', (e) => {
+      fileInput.click();
+    });
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-rose-500/50', 'bg-rose-500/5');
+    });
 
-  dropZone?.addEventListener('dragleave', () => {
-    dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
-  });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
+    });
 
-  dropZone?.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
-    if (e.dataTransfer.files.length) {
-      handleFiles(Array.from(e.dataTransfer.files));
-    }
-  });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
+      if (e.dataTransfer.files && e.dataTransfer.files.length) {
+        handleFiles(Array.from(e.dataTransfer.files));
+      }
+    });
 
-  fileInput?.addEventListener('change', (e) => {
-    if (e.target.files.length) {
-      handleFiles(Array.from(e.target.files));
-      fileInput.value = '';
-    }
-  });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length) {
+        handleFiles(Array.from(e.target.files));
+        fileInput.value = '';
+      }
+    });
+  }
 
   async function handleFiles(files) {
     for (const file of files) {
@@ -211,6 +215,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (queue.length > 0 && selectedIndex === -1) {
       selectItem(0);
     }
+  }
+
+  function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
 
   function renderQueue() {
@@ -349,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
   flipHBtn?.addEventListener('click', () => { currentFlip = !currentFlip; renderInspector(); });
   resetTransformBtn?.addEventListener('click', () => { currentRotation = 0; currentFlip = false; renderInspector(); });
 
-  // Advanced Deep EXIF Sanitization Engine
+  // Deep Pixel & Metadata Sanitization Engine
   async function processImage(item) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -376,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = height;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-        // Deep pixel sanitization: clear canvas completely to remove metadata residual
+        // Temiz piksel çizimi: Tuvali tamamen temizle (tüm kalıntı EXIF/header verilerini sıfırlar)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (currentRotation !== 0 || currentFlip) {
