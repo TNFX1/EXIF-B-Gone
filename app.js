@@ -174,11 +174,11 @@ function updateUI() {
     }
     if (processBtn) {
       processBtn.disabled = true;
-      processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+      processBtn.className = "flex-1 py-2.5 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
     }
     if (zipBtn) {
       zipBtn.disabled = true;
-      zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+      zipBtn.className = "py-2.5 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
     }
     resetInspector();
     return;
@@ -189,11 +189,11 @@ function updateUI() {
 
   if (processBtn) {
     processBtn.disabled = false;
-    processBtn.className = "flex-1 py-3 px-4 rounded-2xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
+    processBtn.className = "flex-1 py-2.5 px-4 rounded-2xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
   }
   if (zipBtn) {
     zipBtn.disabled = false;
-    zipBtn.className = "py-3 px-4 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
+    zipBtn.className = "py-2.5 px-4 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
   }
 
   queue.forEach((item, index) => {
@@ -468,6 +468,7 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
   }
 });
 
+// Geri Bildirim Gönderme Handler'ı (FormData ile Düzeltildi)
 document.getElementById('feedbackForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('feedbackEmail')?.value;
@@ -479,11 +480,17 @@ document.getElementById('feedbackForm')?.addEventListener('submit', async (e) =>
     sendBtn.textContent = currentLang === 'tr' ? 'Gönderiliyor...' : 'Sending...';
   }
 
+  const formData = new FormData();
+  formData.append('email', email || 'Unspecified');
+  formData.append('message', message);
+
   try {
     const response = await fetch(FORMSPREE_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ email: email || 'Unspecified', message: message })
+      body: formData,
+      headers: {
+        'Accept': 'application/json'
+      }
     });
 
     if (response.ok) {
@@ -491,10 +498,10 @@ document.getElementById('feedbackForm')?.addEventListener('submit', async (e) =>
       document.getElementById('feedbackForm').reset();
       feedbackModal?.classList.add('hidden');
     } else {
-      alert(currentLang === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.');
+      alert(currentLang === 'tr' ? 'Bir hata oluştu. Lütfen Formspree ID adresinizi kontrol edin.' : 'An error occurred. Please check your Formspree ID.');
     }
   } catch (error) {
-    alert(currentLang === 'tr' ? 'Bağlantı hatası.' : 'Connection error.');
+    alert(currentLang === 'tr' ? 'Bağlantı hatası oluştu.' : 'Connection error occurred.');
   } finally {
     if (sendBtn) {
       sendBtn.disabled = false;
