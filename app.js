@@ -7,7 +7,7 @@ if (typeof nw !== 'undefined') {
 
 let queue = [];
 let selectedIndex = null;
-const CURRENT_VERSION = "1.3.0";
+const CURRENT_VERSION = "1.4.0";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
@@ -24,17 +24,17 @@ const NON_REMOVABLE_KEYS = [
 
 const i18n = {
   tr: {
-    subtitle: "Fotoğraflarınızın izlerini sıfırlayın.",
+    subtitle: "Fotoğraf ve Videolarınızın izlerini sıfırlayın.",
     btnFeedback: "Geri Bildirim",
-    dragTitle: "Fotoğraflarınızı buraya bırakın veya göz atın",
+    dragTitle: "Fotoğraf veya Videolarınızı buraya bırakın",
     dragSub: "Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.",
     queueTitle: "İşlem Kuyruğu",
     btnClear: "Temizle",
-    emptyState: "Kuyrukta fotoğraf yok.",
+    emptyState: "Kuyrukta dosya yok.",
     btnProcess: "Temizle & İndir",
     btnZip: "ZIP İndir",
     inspectorTitle: "Gizlilik Analizi",
-    inspectorEmpty: "Fotoğraf seçerek içeride kalan gizli verileri kontrol edin.",
+    inspectorEmpty: "Dosya seçerek içeride kalan gizli verileri kontrol edin.",
     settingsTitle: "Ayarlar",
     langLabel: "Uygulama Dili",
     updateLabel: "Güncelleme Durumu",
@@ -43,21 +43,21 @@ const i18n = {
     feedbackSub: "İstek, öneri veya karşılaştığınız hataları bize iletebilirsiniz.",
     btnSendFeedback: "Gönder",
     outFormat: "Çıktı Formatı",
-    resizeMax: "Max Genişlik (px)",
+    resizeMax: "Boyut (Genişlik x Yükseklik)",
     qualityLabel: "Kalite"
   },
   en: {
-    subtitle: "Strip unwanted metadata from your photos.",
+    subtitle: "Strip unwanted metadata from your photos & videos.",
     btnFeedback: "Feedback",
-    dragTitle: "Drop your photos here or click to browse",
+    dragTitle: "Drop your photos or videos here or click to browse",
     dragSub: "All files processed locally on your RAM, zero cloud upload.",
     queueTitle: "Queue",
     btnClear: "Clear",
-    emptyState: "No photos in queue.",
+    emptyState: "No files in queue.",
     btnProcess: "Clean & Download",
     btnZip: "Download ZIP",
     inspectorTitle: "Privacy Inspector",
-    inspectorEmpty: "Select a photo to inspect embedded metadata.",
+    inspectorEmpty: "Select a file to inspect embedded metadata.",
     settingsTitle: "Settings",
     langLabel: "App Language",
     updateLabel: "Update Status",
@@ -66,29 +66,13 @@ const i18n = {
     feedbackSub: "Share your ideas or bug reports with us.",
     btnSendFeedback: "Submit",
     outFormat: "Export Format",
-    resizeMax: "Max Width (px)",
+    resizeMax: "Size (Width x Height)",
     qualityLabel: "Quality"
   }
 };
 
 let currentLang = localStorage.getItem('appLang') || 'tr';
-
-const welcomeModal = document.getElementById('welcomeLangModal');
-if (!localStorage.getItem('appLang')) {
-  welcomeModal?.classList.remove('hidden');
-} else {
-  setLanguage(currentLang);
-}
-
-document.getElementById('selectTrBtn')?.addEventListener('click', () => {
-  setLanguage('tr');
-  welcomeModal?.classList.add('hidden');
-});
-
-document.getElementById('selectEnBtn')?.addEventListener('click', () => {
-  setLanguage('en');
-  welcomeModal?.classList.add('hidden');
-});
+setLanguage(currentLang);
 
 function setLanguage(lang) {
   currentLang = lang;
@@ -139,7 +123,7 @@ if (dropzone && fileInput) {
 }
 
 async function handleFiles(files) {
-  const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'tiff', 'tif', 'avif'];
+  const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'tiff', 'tif', 'avif', 'bmp', 'mp4', 'mov', 'webm', 'm4v'];
   
   const newFiles = files.filter(f => {
     const ext = f.name.split('.').pop().toLowerCase();
@@ -147,21 +131,29 @@ async function handleFiles(files) {
   });
   
   for (const file of newFiles) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isVideo = ['mp4', 'mov', 'webm', 'm4v'].includes(ext) || file.type.startsWith('video/');
     let exifData = null;
-    try {
-      exifData = await exifr.parse(file, {
-        tiff: true, xmp: true, iptc: true, icc: true, jfif: true, thumbnail: true
-      });
-    } catch (err) {}
+
+    if (!isVideo) {
+      try {
+        exifData = await exifr.parse(file, {
+          tiff: true, xmp: true, iptc: true, icc: true, jfif: true, thumbnail: true
+        });
+      } catch (err) {}
+    }
     
     queue.push({
       file: file,
       name: file.name,
       size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
       exif: exifData,
+      isVideo: isVideo,
       rotation: 0,
       flipH: false,
-      convertedBlob: null
+      convertedBlob: null,
+      naturalWidth: 0,
+      naturalHeight: 0
     });
   }
   
@@ -218,9 +210,11 @@ function updateUI() {
     const isSelected = selectedIndex === index;
     div.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-zinc-900 border-rose-500/50' : 'bg-black/40 border-zinc-800/50 hover:border-zinc-700'}`;
     
+    const iconClass = item.isVideo ? 'fa-video text-rose-400' : 'fa-image text-zinc-500';
+
     div.innerHTML = `
       <div class="flex items-center gap-3 truncate pointer-events-none">
-        <i class="fa-regular fa-image text-zinc-500"></i>
+        <i class="fa-regular ${iconClass}"></i>
         <div class="truncate">
           <p class="text-xs font-medium text-zinc-200 truncate">${item.name}</p>
           <p class="text-[10px] text-zinc-500">${item.size}</p>
@@ -256,107 +250,138 @@ function removeItemByIndex(index) {
   else resetInspector();
 }
 
-async function renderLivePreview() {
-  if (selectedIndex === null || !queue[selectedIndex]) return;
-  const item = queue[selectedIndex];
-  const previewContainer = document.getElementById('imagePreviewContainer');
+function updatePreviewTransform() {
   const previewImg = document.getElementById('imagePreview');
-  
-  if (!previewImg || !previewContainer) return;
+  if (!previewImg || selectedIndex === null || !queue[selectedIndex]) return;
 
-  previewContainer.classList.remove('hidden');
-
-  try {
-    const processed = await processImage(item);
-    if (previewImg.dataset.oldBlobUrl) {
-      URL.revokeObjectURL(previewImg.dataset.oldBlobUrl);
-    }
-    const newUrl = URL.createObjectURL(processed.blob);
-    previewImg.dataset.oldBlobUrl = newUrl;
-    previewImg.src = newUrl;
-  } catch (err) {
-    console.error("Önizleme oluşturulamadı:", err);
-  }
+  const item = queue[selectedIndex];
+  const scaleX = item.flipH ? -1 : 1;
+  previewImg.style.transform = `rotate(${item.rotation}deg) scaleX(${scaleX})`;
 }
 
-function selectFile(index) {
+async function selectFile(index) {
   if (index < 0 || index >= queue.length) return;
   selectedIndex = index;
   const item = queue[index];
 
   const fileNameEl = document.getElementById('selectedFileName');
   if (fileNameEl) fileNameEl.textContent = item.name;
-  
-  renderLivePreview();
 
-  const exifInspector = document.getElementById('exifInspector');
-  if (exifInspector) {
-    if (!item.exif || Object.keys(item.exif).length === 0) {
-      exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Fotoğrafta hiçbir gizli veri (EXIF/GPS/XMP) yok!' : 'No sensitive metadata found!'}</span></div>`;
-    } else {
-      let filteredEntries = [];
-      for (const [key, val] of Object.entries(item.exif)) {
-        if (typeof val !== 'object' && val !== undefined) {
-          if (!NON_REMOVABLE_KEYS.includes(key.toLowerCase())) {
-            filteredEntries.push([key, val]);
-          }
-        }
-      }
+  const previewContainer = document.getElementById('previewContainer');
+  const previewImg = document.getElementById('imagePreview');
+  const previewVideo = document.getElementById('videoPreview');
 
-      if (filteredEntries.length === 0) {
-        exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Görsel temiz. Özel EXIF/GPS verisi yok.' : 'Image is clean. No sensitive EXIF/GPS data.'}</span></div>`;
-      } else {
-        let html = '<div class="flex flex-col gap-1.5 w-full">';
-        for (const [key, val] of filteredEntries) {
-          html += `
-            <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
-              <span class="text-zinc-400 font-medium">${key}</span>
-              <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${val}</span>
-            </div>
-          `;
-        }
-        html += '</div>';
-        exifInspector.innerHTML = html;
-      }
+  if (previewContainer) previewContainer.classList.remove('hidden');
+
+  if (item.isVideo) {
+    if (previewImg) previewImg.classList.add('hidden');
+    if (previewVideo) {
+      previewVideo.classList.remove('hidden');
+      previewVideo.src = URL.createObjectURL(item.file);
+    }
+  } else {
+    if (previewVideo) previewVideo.classList.add('hidden');
+    if (previewImg) {
+      previewImg.classList.remove('hidden');
+      const sourceBlob = await getImageSourceBlob(item);
+      previewImg.src = URL.createObjectURL(sourceBlob);
+      
+      previewImg.onload = () => {
+        item.naturalWidth = previewImg.naturalWidth;
+        item.naturalHeight = previewImg.naturalHeight;
+      };
+      
+      updatePreviewTransform();
     }
   }
 
+  renderInspectorData(item);
   updateUI();
 }
 
+function renderInspectorData(item) {
+  const exifInspector = document.getElementById('exifInspector');
+  if (!exifInspector) return;
+
+  if (item.isVideo) {
+    exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Video metadata temizleme modu aktif.' : 'Video metadata stripping mode active.'}</span></div>`;
+    return;
+  }
+
+  if (!item.exif || Object.keys(item.exif).length === 0) {
+    exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Fotoğrafta hiçbir gizli veri (EXIF/GPS/XMP) yok!' : 'No sensitive metadata found!'}</span></div>`;
+  } else {
+    let filteredEntries = [];
+    for (const [key, val] of Object.entries(item.exif)) {
+      if (typeof val !== 'object' && val !== undefined) {
+        if (!NON_REMOVABLE_KEYS.includes(key.toLowerCase())) {
+          filteredEntries.push([key, val]);
+        }
+      }
+    }
+
+    if (filteredEntries.length === 0) {
+      exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Görsel temiz. Özel EXIF/GPS verisi yok.' : 'Image is clean. No sensitive EXIF/GPS data.'}</span></div>`;
+    } else {
+      let html = '<div class="flex flex-col gap-1.5 w-full">';
+      for (const [key, val] of filteredEntries) {
+        html += `
+          <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
+            <span class="text-zinc-400 font-medium">${key}</span>
+            <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${val}</span>
+          </div>
+        `;
+      }
+      html += '</div>';
+      exifInspector.innerHTML = html;
+    }
+  }
+}
+
+// Döndürme & Çevirme Butonları (Anında & CSS Animasyonlu)
 document.getElementById('rotateLeftBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
-    queue[selectedIndex].rotation = (queue[selectedIndex].rotation - 90) % 360;
-    renderLivePreview();
+    queue[selectedIndex].rotation -= 90;
+    updatePreviewTransform();
   }
 });
 
 document.getElementById('rotateRightBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
-    queue[selectedIndex].rotation = (queue[selectedIndex].rotation + 90) % 360;
-    renderLivePreview();
+    queue[selectedIndex].rotation += 90;
+    updatePreviewTransform();
   }
 });
 
 document.getElementById('flipHBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].flipH = !queue[selectedIndex].flipH;
-    renderLivePreview();
+    updatePreviewTransform();
   }
 });
+
+// Hızlı Ölçek Butonları
+document.getElementById('scale50Btn')?.addEventListener('click', () => setPercentScale(0.5));
+document.getElementById('scale75Btn')?.addEventListener('click', () => setPercentScale(0.75));
+document.getElementById('resetScaleBtn')?.addEventListener('click', resetScale);
+
+function setPercentScale(factor) {
+  if (selectedIndex === null || !queue[selectedIndex]) return;
+  const item = queue[selectedIndex];
+  if (item.naturalWidth && item.naturalHeight) {
+    document.getElementById('maxWidthInput').value = Math.round(item.naturalWidth * factor);
+    document.getElementById('maxHeightInput').value = Math.round(item.naturalHeight * factor);
+  }
+}
+
+function resetScale() {
+  document.getElementById('maxWidthInput').value = '';
+  document.getElementById('maxHeightInput').value = '';
+}
 
 document.getElementById('qualityRange')?.addEventListener('input', (e) => {
   const qualityVal = document.getElementById('qualityVal');
   if (qualityVal) qualityVal.textContent = Math.round(e.target.value * 100) + '%';
-  renderLivePreview();
-});
-
-document.getElementById('exportFormat')?.addEventListener('change', () => {
-  renderLivePreview();
-});
-
-document.getElementById('maxWidthInput')?.addEventListener('input', () => {
-  renderLivePreview();
 });
 
 document.getElementById('clearAllBtn')?.addEventListener('click', (e) => {
@@ -370,7 +395,7 @@ function resetInspector() {
   const fileNameEl = document.getElementById('selectedFileName');
   if (fileNameEl) fileNameEl.textContent = '';
   
-  const previewContainer = document.getElementById('imagePreviewContainer');
+  const previewContainer = document.getElementById('previewContainer');
   if (previewContainer) previewContainer.classList.add('hidden');
   
   const exifInspector = document.getElementById('exifInspector');
@@ -422,7 +447,19 @@ async function getImageSourceBlob(item) {
   return item.file;
 }
 
-async function processImage(item) {
+// Video Metadata Temizleme (Ham Blob Temizliği)
+async function stripVideoMetadata(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  return new Blob([bytes], { type: file.type || 'video/mp4' });
+}
+
+async function processMedia(item) {
+  if (item.isVideo) {
+    const cleanedBlob = await stripVideoMetadata(item.file);
+    return { blob: cleanedBlob, name: item.name };
+  }
+
   const sourceBlob = await getImageSourceBlob(item);
   
   return new Promise((resolve, reject) => {
@@ -441,11 +478,18 @@ async function processImage(item) {
         let renderW = is90 ? origH : origW;
         let renderH = is90 ? origW : origH;
 
-        const maxWidthInput = document.getElementById('maxWidthInput');
-        const maxWidth = maxWidthInput ? parseInt(maxWidthInput.value) : null;
-        if (maxWidth && renderW > maxWidth) {
-          renderH = Math.round((renderH * maxWidth) / renderW);
-          renderW = maxWidth;
+        const customW = parseInt(document.getElementById('maxWidthInput')?.value);
+        const customH = parseInt(document.getElementById('maxHeightInput')?.value);
+
+        if (customW && customH) {
+          renderW = customW;
+          renderH = customH;
+        } else if (customW) {
+          renderH = Math.round((renderH * customW) / renderW);
+          renderW = customW;
+        } else if (customH) {
+          renderW = Math.round((renderW * customH) / renderH);
+          renderH = customH;
         }
 
         canvas.width = renderW;
@@ -465,10 +509,9 @@ async function processImage(item) {
           targetMime = exportFormatSelect;
         }
 
-        const qualityRange = document.getElementById('qualityRange');
-        const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
+        const quality = parseFloat(document.getElementById('qualityRange')?.value || 0.9);
 
-        if (targetMime === 'image/jpeg') {
+        if (targetMime === 'image/jpeg' || targetMime === 'image/bmp') {
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
@@ -485,13 +528,18 @@ async function processImage(item) {
         let newName = item.name;
         const nameWithoutExt = newName.substring(0, newName.lastIndexOf('.')) || newName;
 
-        if (targetMime === 'image/jpeg') newName = `${nameWithoutExt}.jpg`;
-        else if (targetMime === 'image/png') newName = `${nameWithoutExt}.png`;
-        else if (targetMime === 'image/webp') newName = `${nameWithoutExt}.webp`;
+        const extMap = {
+          'image/jpeg': '.jpg',
+          'image/png': '.png',
+          'image/webp': '.webp',
+          'image/avif': '.avif',
+          'image/bmp': '.bmp'
+        };
+        if (extMap[targetMime]) newName = nameWithoutExt + extMap[targetMime];
 
         canvas.toBlob((blob) => {
           if (blob) {
-            resolve({ blob, name: newName, type: targetMime });
+            resolve({ blob, name: newName });
           } else {
             reject(new Error("Canvas toBlob failed"));
           }
@@ -510,10 +558,10 @@ document.getElementById('processBtn')?.addEventListener('click', async () => {
   if (queue.length === 0) return;
   for (const item of queue) {
     try {
-      const processed = await processImage(item);
+      const processed = await processMedia(item);
       triggerDownload(processed.blob, `cleaned_${processed.name}`);
     } catch (e) {
-      alert("Görsel işlenirken bir hata oluştu.");
+      alert(currentLang === 'tr' ? "Dosya işlenirken bir hata oluştu." : "Error processing file.");
     }
   }
 });
@@ -523,14 +571,15 @@ document.getElementById('zipBtn')?.addEventListener('click', async () => {
   const zip = new JSZip();
   for (const item of queue) {
     try {
-      const processed = await processImage(item);
+      const processed = await processMedia(item);
       zip.file(`cleaned_${processed.name}`, processed.blob);
     } catch (e) {}
   }
   const content = await zip.generateAsync({ type: 'blob' });
-  triggerDownload(content, 'EXIF_Cleaned_Photos.zip');
+  triggerDownload(content, 'EXIF_Cleaned_Files.zip');
 });
 
+// Modal Kontrolleri
 const settingsModal = document.getElementById('settingsModal');
 const feedbackModal = document.getElementById('feedbackModal');
 
@@ -606,13 +655,13 @@ document.getElementById('feedbackForm')?.addEventListener('submit', async (e) =>
       document.getElementById('feedbackForm').reset();
       feedbackModal?.classList.add('hidden');
     } else {
-      throw new Error('Formspree endpoint error');
+      throw new Error('Formspree error');
     }
   } catch (error) {
     if (typeof nw !== 'undefined' && nw.Shell) {
       nw.Shell.openExternal(`mailto:support@exifbgone.app?subject=EXIF-B-Gone Feedback&body=${encodeURIComponent(message)}`);
     }
-    alert(currentLang === 'tr' ? 'Geri bildirim iletilemedi. Varsayılan e-posta istemciniz açılıyor...' : 'Could not send feedback directly. Opening email client...');
+    alert(currentLang === 'tr' ? 'Geri bildirim iletilemedi. E-posta istemciniz açılıyor...' : 'Opening email client...');
   } finally {
     if (sendBtn) {
       sendBtn.disabled = false;
