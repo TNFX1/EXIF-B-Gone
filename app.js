@@ -68,8 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
       inspectorClean: "Dosya temiz. Hassas EXIF, GPS veya cihaz metadatsı tespit edilmedi.",
       feedbackSuccess: "Teşekkürler! Geri bildiriminiz başarıyla iletildi.",
       footerText: "EXIF-B-Gone • Açık Kaynaklı Gizlilik Aracı",
-      settingsTitle: "Ayarlar",
-      langLabel: "Uygulama Dili",
+      settingsTitle: "Settings",
+      langLabel: "App Language",
       feedbackTitle: "Geri Bildirim Gönder",
       phFeedbackEmail: "E-posta Adresiniz (isteğe bağlı)",
       phFeedbackMessage: "Görüş, öneri veya karşılaştığınız hatayı yazın...",
@@ -143,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Dinamik Format Seçeneklerini Güncelleme (Video vs Fotoğraf Ayrımı)
   function updateFormatDropdown(type) {
     if (!exportFormat) return;
     const currentVal = exportFormat.value;
@@ -174,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }
 
-    // Önceden seçilen değer yeni listede varsa koru
     const exists = Array.from(exportFormat.options).some(opt => opt.value === currentVal);
     if (exists) exportFormat.value = currentVal;
     else exportFormat.value = "original";
@@ -189,15 +187,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
   document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
 
-  // Hatasız Feedback Gönderimi (CORS & Network Safe)
+  // Gerçek Formspree İstek Kontrolü
   feedbackForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const sendBtn = document.getElementById('sendFeedbackBtn');
-    const email = document.getElementById('feedbackEmail')?.value || 'Anonim';
-    const message = document.getElementById('feedbackMessage')?.value;
+    const email = document.getElementById('feedbackEmail')?.value || '';
+    const message = document.getElementById('feedbackMessage')?.value || '';
 
-    if (!message) return;
+    if (!message.trim()) {
+      alert("Lütfen mesaj alanını doldurun.");
+      return;
+    }
 
     if (sendBtn) {
       sendBtn.disabled = true;
@@ -205,27 +206,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('message', message);
-      formData.append('app_version', 'v1.5.0');
-
-      await fetch(FORMSPREE_ENDPOINT, {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
-        body: formData,
-        mode: 'no-cors'
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          message: message,
+          _subject: "EXIF-B-Gone Yeni Geri Bildirim!",
+          app_version: "v1.5.0"
+        })
       });
 
-      feedbackModal?.classList.add('hidden');
-      feedbackForm.reset();
-      const dict = i18n[currentLang] || i18n.en;
-      showToast(dict.feedbackSuccess);
+      if (response.ok) {
+        feedbackModal?.classList.add('hidden');
+        feedbackForm.reset();
+        const dict = i18n[currentLang] || i18n.en;
+        showToast(dict.feedbackSuccess);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Formspree Hata Detayı:", errorData);
+        alert("Geri bildirim gönderilemedi. Formspree e-posta aktivasyonunuzu kontrol edin.");
+      }
     } catch (error) {
-      console.error("Feedback error:", error);
-      feedbackModal?.classList.add('hidden');
-      feedbackForm.reset();
-      const dict = i18n[currentLang] || i18n.en;
-      showToast(dict.feedbackSuccess);
+      console.error("Feedback Gönderim Hatası:", error);
+      alert("Ağ hatası oluştu. Lütfen bağlantınızı kontrol edin.");
     } finally {
       if (sendBtn) {
         sendBtn.disabled = false;
@@ -361,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = queue[index];
     if (!item) return;
 
-    // Seçilen tipe göre format dropdown'ını güncelle
     updateFormatDropdown(item.type);
 
     selectedFileName.textContent = item.name;
