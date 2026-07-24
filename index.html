@@ -9,7 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    /* Global ve Pencere Scrollbar'ını Tamamen Kapat */
+    /* Global Scrollbar Kapatma */
     html, body {
       overflow: hidden !important;
       height: 100vh !important;
@@ -18,14 +18,22 @@
       padding: 0;
     }
     ::-webkit-scrollbar {
-      display: none !important;
-      width: 0px !important;
-      height: 0px !important;
-      background: transparent !important;
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.5);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(244, 63, 94, 0.5);
     }
     * {
-      -ms-overflow-style: none !important;  /* IE and Edge */
-      scrollbar-width: none !important;  /* Firefox */
+      -ms-overflow-style: auto;
+      scrollbar-width: thin;
     }
   </style>
 </head>
@@ -91,7 +99,7 @@
               <label class="text-[11px] font-medium text-slate-400" data-i18n="qualityLabel">Kalite (%)</label>
               <span id="qualityVal" class="text-[11px] font-bold text-rose-400">90%</span>
             </div>
-            <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.9" class="w-full accent-rose-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
+            <input type="range" id="qualityRange" min="0.05" max="1" step="0.05" value="0.9" class="w-full accent-rose-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
           </div>
         </div>
 
@@ -139,7 +147,7 @@
 
     </section>
 
-    <section class="lg:col-span-5 flex flex-col gap-6 overflow-hidden">
+    <section class="lg:col-span-5 flex flex-col gap-6 overflow-hidden h-full">
       <div class="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-4 flex flex-col gap-3 h-full overflow-hidden">
         <div class="flex items-center justify-between border-b border-slate-800/60 pb-2.5 shrink-0">
           <div class="flex items-center gap-2">
@@ -149,11 +157,11 @@
           <span id="selectedFileName" class="text-[11px] text-slate-500 truncate max-w-[150px]"></span>
         </div>
 
-        <div id="imagePreviewContainer" class="hidden relative rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center h-40 shrink-0">
+        <div id="imagePreviewContainer" class="hidden relative rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center h-44 shrink-0">
           <img id="imagePreview" class="max-h-full max-w-full object-contain transition-transform duration-200">
         </div>
 
-        <div id="exifInspector" class="flex-1 overflow-y-auto">
+        <div id="exifInspector" class="flex-1 overflow-y-auto pr-1">
           <div class="text-center py-8 text-slate-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">
             Listeden bir fotoğrafa tıklayarak saklı verileri görüntüleyebilirsiniz.
           </div>

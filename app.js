@@ -11,6 +11,13 @@ const CURRENT_VERSION = "1.2.1";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
+// Silinemeyen / Görselin Kendisine Ait Olan Teknik Parametreler (Filtrelenecekler)
+const NON_REMOVABLE_KEYS = [
+  'orientation', 'xresolution', 'yresolution', 'resolutionunit',
+  'colorspace', 'exifimagewidth', 'exifimageheight', 'imagewidth',
+  'imageheight', 'width', 'height', 'compression', 'photometricinterpretation'
+];
+
 const i18n = {
   tr: {
     subtitle: "Gizlilik ve EXIF Temizleme Asistanı",
@@ -265,21 +272,33 @@ function selectFile(index) {
   const exifInspector = document.getElementById('exifInspector');
   if (exifInspector) {
     if (!item.exif || Object.keys(item.exif).length === 0) {
-      exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Bu fotoğrafta gizli EXIF verisi bulunamadı.' : 'No EXIF metadata found in this image.'}</div>`;
+      exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Bu fotoğrafta temizlenecek gizli EXIF verisi bulunamadı.' : 'No removable metadata found in this image.'}</div>`;
     } else {
-      let html = '<div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">';
+      let filteredEntries = [];
       for (const [key, val] of Object.entries(item.exif)) {
         if (typeof val !== 'object' && val !== undefined) {
+          // Yalnızca silinebilen EXIF verilerini göster (Resim ölçüleri ve renk uzayı elendi)
+          if (!NON_REMOVABLE_KEYS.includes(key.toLowerCase())) {
+            filteredEntries.push([key, val]);
+          }
+        }
+      }
+
+      if (filteredEntries.length === 0) {
+        exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Fotoğrafta temizlenebilir özel veri yok.' : 'No sensitive EXIF metadata found.'}</div>`;
+      } else {
+        let html = '<div class="flex flex-col gap-1.5 w-full">';
+        for (const [key, val] of filteredEntries) {
           html += `
-            <div class="flex items-center justify-between text-xs py-1 border-b border-slate-800/40">
+            <div class="flex items-center justify-between text-xs py-1.5 px-2 rounded-xl bg-slate-950/50 border border-slate-800/60">
               <span class="text-slate-400 font-medium">${key}</span>
-              <span class="text-slate-200 font-mono text-[11px] truncate max-w-[150px]">${val}</span>
+              <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${val}</span>
             </div>
           `;
         }
+        html += '</div>';
+        exifInspector.innerHTML = html;
       }
-      html += '</div>';
-      exifInspector.innerHTML = html;
     }
   }
 
@@ -356,7 +375,7 @@ function triggerDownload(blob, fileName) {
   }, 300);
 }
 
-// Görseli İşleme, Kalite ve Format Dönüştürme Mantığı
+// Görseli İşleme ve Gerçek Sıkıştırma (Kalite Dengesi)
 async function processImage(item) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -382,10 +401,16 @@ async function processImage(item) {
       canvas.height = renderH;
 
       const ctx = canvas.getContext('2d');
-      
-      // JPEG veya şeffaflığı desteklemeyen formatlar için arka planı beyaz yap
       const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
-      const targetMime = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
+      let targetMime = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
+
+      const qualityRange = document.getElementById('qualityRange');
+      const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
+
+      // PNG kayıpsız olduğu için kullanıcı kalite düşürdüyse (örneğin < 0.90) otomatik olarak JPEG/WebP yapar
+      if (targetMime === 'image/png' && quality < 0.9) {
+        targetMime = 'image/jpeg';
+      }
 
       if (targetMime === 'image/jpeg') {
         ctx.fillStyle = '#FFFFFF';
@@ -400,11 +425,6 @@ async function processImage(item) {
       const drawH = is90 ? canvas.width : canvas.height;
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
-      // Kalite Değerini Al
-      const qualityRange = document.getElementById('qualityRange');
-      const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
-
-      // Dosya Uzantısını Hedef Formata Göre Güncelle
       let newName = item.name;
       const nameWithoutExt = newName.substring(0, newName.lastIndexOf('.')) || newName;
 
@@ -486,7 +506,6 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
   }
 });
 
-// Geri Bildirim Gönderme (FormData & Fallback)
 document.getElementById('feedbackForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('feedbackEmail')?.value || 'no-reply@exifbgone.app';
