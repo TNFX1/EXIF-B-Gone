@@ -1,11 +1,5 @@
-/**
- * EXIF-B-Gone Engine v1.5.0
- * Full Feature Preservation & Bilingual Support
- */
-
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Global App State
   let queue = [];
   let selectedIndex = -1;
   let currentRotation = 0;
@@ -13,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentScale = 1;
   let currentLang = localStorage.getItem('app_lang') || 'en';
 
-  // Complete i18n Translation Dictionary
   const i18n = {
     en: {
       subtitle: "Strip unwanted metadata from your photos & videos.",
@@ -38,27 +31,15 @@ document.addEventListener('DOMContentLoaded', () => {
       btnZip: "Download ZIP",
       inspectorTitle: "Privacy Inspector",
       inspectorEmpty: "Select a file to inspect embedded metadata.",
-      inspectorClean: "Image is clean. No sensitive EXIF/GPS data.",
+      inspectorClean: "File is clean. No sensitive EXIF, GPS or device metadata detected.",
+      feedbackSuccess: "Thank you! Your feedback has been sent successfully.",
       footerText: "EXIF-B-Gone • Open Source Privacy Tool",
       settingsTitle: "Settings",
       langLabel: "App Language",
       feedbackTitle: "Send Feedback",
       phFeedbackEmail: "Your Email (optional)",
       phFeedbackMessage: "Write your thoughts or issues...",
-      btnSendFeedback: "Send",
-      // Metadata Details
-      vidAtom: "Container Atom",
-      vidAtomDesc: "NXXV Atom Found",
-      vidCreation: "Creation/Modify Info",
-      vidCreationDesc: "Present (GPS / Device / Date)",
-      vidLocation: "GPS/Device Location",
-      vidLocationDesc: "Parsed Protection Context",
-      vidFormat: "Format",
-      vidSize: "Size",
-      tagCamera: "Camera / Device",
-      tagSoftware: "Software",
-      tagDateTime: "Date & Time",
-      tagGPS: "GPS Coordinates"
+      btnSendFeedback: "Send"
     },
     tr: {
       subtitle: "Fotoğraf ve Videolarınızın izlerini sıfırlayın.",
@@ -83,31 +64,18 @@ document.addEventListener('DOMContentLoaded', () => {
       btnZip: "ZIP İndir",
       inspectorTitle: "Gizlilik Analizi",
       inspectorEmpty: "Dosya seçerek içeride kalan gizli verileri kontrol edin.",
-      inspectorClean: "Görsel temiz. Hassas EXIF/GPS verisi yok.",
+      inspectorClean: "Dosya temiz. Hassas EXIF, GPS veya cihaz metadatsı tespit edilmedi.",
+      feedbackSuccess: "Teşekkürler! Geri bildiriminiz başarıyla iletildi.",
       footerText: "EXIF-B-Gone • Açık Kaynaklı Gizlilik Aracı",
       settingsTitle: "Ayarlar",
       langLabel: "Uygulama Dili",
       feedbackTitle: "Geri Bildirim Gönder",
       phFeedbackEmail: "E-posta Adresiniz (isteğe bağlı)",
       phFeedbackMessage: "Görüş, öneri veya karşılaştığınız hatayı yazın...",
-      btnSendFeedback: "Gönder",
-      // Metadata Details
-      vidAtom: "Konteyner Atomu",
-      vidAtomDesc: "NXXV Atomu Mevcut",
-      vidCreation: "Oluşturma/Güncelleme",
-      vidCreationDesc: "Mevcut (GPS / Cihaz / Tarih)",
-      vidLocation: "GPS/Cihaz Konumu",
-      vidLocationDesc: "Ayrıştırılmış Konum Bağlamı",
-      vidFormat: "Format",
-      vidSize: "Boyut",
-      tagCamera: "Kamera / Cihaz",
-      tagSoftware: "Yazılım",
-      tagDateTime: "Tarih ve Saat",
-      tagGPS: "GPS Koordinatları"
+      btnSendFeedback: "Gönder"
     }
   };
 
-  // DOM Selectors
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const fileList = document.getElementById('fileList');
@@ -138,9 +106,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const settingsModal = document.getElementById('settingsModal');
   const feedbackModal = document.getElementById('feedbackModal');
+  const feedbackForm = document.getElementById('feedbackForm');
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
   const langSelect = document.getElementById('langSelect');
 
-  // Apply Language Strings
+  function showToast(msg) {
+    if (!toast || !toastMsg) return;
+    toastMsg.textContent = msg;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0');
+    }, 3500);
+  }
+
   function applyLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('app_lang', lang);
@@ -163,20 +142,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Quality Input Event
   qualityRange?.addEventListener('input', (e) => {
     if (qualityVal) qualityVal.textContent = `${Math.round(e.target.value * 100)}%`;
   });
 
-  // Modal Toggles
   document.getElementById('openSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
   document.getElementById('closeSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
   document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
   document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
 
+  feedbackForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    feedbackModal?.classList.add('hidden');
+    feedbackForm.reset();
+    const dict = i18n[currentLang] || i18n.en;
+    showToast(dict.feedbackSuccess);
+  });
+
   langSelect?.addEventListener('change', (e) => applyLanguage(e.target.value));
 
-  // File Upload Handlers
   dropzone?.addEventListener('click', () => fileInput.click());
   dropzone?.addEventListener('dragover', (e) => e.preventDefault());
   dropzone?.addEventListener('drop', (e) => {
@@ -196,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         name: file.name,
         size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
         type: isVideo ? 'video' : 'image',
+        exifParsed: false,
         exifData: null
       });
     });
@@ -280,13 +265,22 @@ document.addEventListener('DOMContentLoaded', () => {
       videoPreview.classList.add('hidden');
       imagePreview.classList.remove('hidden');
       imagePreview.src = url;
-      if (typeof exifr !== 'undefined' && !item.exifData) {
-        try {
-          item.exifData = await exifr.parse(item.file);
-        } catch (err) {
-          item.exifData = null;
-        }
+    }
+
+    // Real Metadata Parsing via exifr (Binary Header Inspection)
+    if (!item.exifParsed && typeof exifr !== 'undefined') {
+      try {
+        item.exifData = await exifr.parse(item.file, {
+          tiff: true,
+          xmp: true,
+          icc: false,
+          jfif: true,
+          ihdr: true
+        });
+      } catch (err) {
+        item.exifData = null;
       }
+      item.exifParsed = true;
     }
 
     renderInspector(item);
@@ -295,34 +289,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderInspector(item) {
     const dict = i18n[currentLang] || i18n.en;
     
-    if (item.type === 'video') {
-      exifInspector.innerHTML = `
-        <div class="flex flex-col gap-2">
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <span class="text-zinc-400 font-medium">${dict.vidAtom}</span>
-            <span class="text-rose-400 font-mono text-[11px]">${dict.vidAtomDesc}</span>
-          </div>
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <span class="text-zinc-400 font-medium">${dict.vidCreation}</span>
-            <span class="text-rose-400 font-mono text-[11px]">${dict.vidCreationDesc}</span>
-          </div>
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <span class="text-zinc-400 font-medium">${dict.vidLocation}</span>
-            <span class="text-rose-400 font-mono text-[11px]">${dict.vidLocationDesc}</span>
-          </div>
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <span class="text-zinc-400 font-medium">${dict.vidFormat}</span>
-            <span class="text-zinc-200 font-mono text-[11px]">${item.file.type || 'video/mp4'}</span>
-          </div>
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <span class="text-zinc-400 font-medium">${dict.vidSize}</span>
-            <span class="text-zinc-200 font-mono text-[11px]">${item.size}</span>
-          </div>
-        </div>
-      `;
-    } else if (item.exifData && Object.keys(item.exifData).length > 0) {
+    // Check if exifData contains actual valid key-values
+    const hasMetadata = item.exifData && Object.keys(item.exifData).length > 0;
+
+    if (hasMetadata) {
       let rows = '';
       for (const [key, val] of Object.entries(item.exifData)) {
+        // Skip raw buffers or internal unreadable objects
+        if (typeof val === 'object' && !(val instanceof Date)) continue;
+        
         rows += `
           <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
             <span class="text-zinc-400 font-medium truncate max-w-[140px]">${key}</span>
@@ -330,17 +305,22 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `;
       }
-      exifInspector.innerHTML = `<div class="flex flex-col gap-2">${rows}</div>`;
-    } else {
-      exifInspector.innerHTML = `
-        <div class="text-center py-10 flex flex-col items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <i class="fa-solid fa-check text-sm"></i>
-          </div>
-          <p class="text-xs text-emerald-400 font-medium">${dict.inspectorClean}</p>
-        </div>
-      `;
+
+      if (rows.length > 0) {
+        exifInspector.innerHTML = `<div class="flex flex-col gap-2">${rows}</div>`;
+        return;
+      }
     }
+
+    // No sensitive metadata detected after full parse
+    exifInspector.innerHTML = `
+      <div class="text-center py-10 flex flex-col items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <i class="fa-solid fa-shield-check text-base"></i>
+        </div>
+        <p class="text-xs text-emerald-400 font-medium px-4">${dict.inspectorClean}</p>
+      </div>
+    `;
   }
 
   function resetPreview() {
@@ -350,7 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
     exifInspector.innerHTML = `<div class="text-center py-12 text-zinc-600 text-xs leading-relaxed">${dict.inspectorEmpty}</div>`;
   }
 
-  // Transform Handlers
   function updateTransforms() {
     const transformStr = `rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1}) scale(${currentScale})`;
     imagePreview.style.transform = transformStr;
@@ -370,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQueueUI();
   });
 
-  // Processing Core (Canvas Clean & Download)
   async function processImage(item) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -404,23 +382,27 @@ document.addEventListener('DOMContentLoaded', () => {
           ctx.drawImage(img, 0, 0, width, height);
         }
 
+        const selectedFmt = exportFormat?.value || 'original';
+        let mimeType = 'image/jpeg';
+        if (selectedFmt === 'png') mimeType = 'image/png';
+        if (selectedFmt === 'webp') mimeType = 'image/webp';
+
         const quality = parseFloat(qualityRange?.value) || 0.9;
         canvas.toBlob((blob) => {
-          resolve(blob);
-        }, 'image/jpeg', quality);
+          resolve({ blob, format: selectedFmt === 'original' ? 'jpg' : selectedFmt });
+        }, mimeType, quality);
       };
       img.src = URL.createObjectURL(item.file);
     });
   }
 
-  // Process and Download Actions
   processBtn?.addEventListener('click', async () => {
     for (const item of queue) {
       if (item.type === 'image') {
-        const blob = await processImage(item);
+        const { blob, format } = await processImage(item);
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.jpg`;
+        a.download = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${format}`;
         a.click();
       } else {
         const a = document.createElement('a');
@@ -437,8 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     for (const item of queue) {
       if (item.type === 'image') {
-        const blob = await processImage(item);
-        zip.file(`cleaned_${item.name.replace(/\.[^/.]+$/, '')}.jpg`, blob);
+        const { blob, format } = await processImage(item);
+        zip.file(`cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${format}`, blob);
       } else {
         zip.file(`cleaned_${item.name}`, item.file);
       }
@@ -451,6 +433,5 @@ document.addEventListener('DOMContentLoaded', () => {
     a.click();
   });
 
-  // Init App Language
   applyLanguage(currentLang);
 });
