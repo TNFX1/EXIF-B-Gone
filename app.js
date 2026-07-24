@@ -40,7 +40,6 @@ const i18n = {
     updateLabel: "Güncelleme Durumu",
     btnCheckUpdate: "Güncellemeleri Kontrol Et",
     feedbackTitle: "Geri Bildirim Gönder",
-    feedbackSub: "İstek, öneri veya karşılaştığınız hataları bize iletebilirsiniz.",
     btnSendFeedback: "Gönder",
     outFormat: "Çıktı Formatı",
     resizeMax: "Boyut (Genişlik x Yükseklik)",
@@ -63,7 +62,6 @@ const i18n = {
     updateLabel: "Update Status",
     btnCheckUpdate: "Check for Updates",
     feedbackTitle: "Send Feedback",
-    feedbackSub: "Share your ideas or bug reports with us.",
     btnSendFeedback: "Submit",
     outFormat: "Export Format",
     resizeMax: "Size (Width x Height)",
@@ -122,15 +120,11 @@ if (dropzone && fileInput) {
   });
 }
 
-// MP4/MOV Metadata Okuma (Temizlenmiş videoları sıfır bayt kontrolüyle doğru tespit eder)
 async function parseVideoMetadata(file) {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
-  const metadata = {};
-
   let hasUserData = false;
-  
-  // 'udta', 'meta' veya 'ilst' atomlarının içeriklerini kontrol et
+
   for (let i = 0; i < bytes.length - 4; i++) {
     const atom = String.fromCharCode(bytes[i], bytes[i+1], bytes[i+2], bytes[i+3]);
     if (atom === 'udta' || atom === 'meta' || atom === 'ilst' || atom === 'uuid') {
@@ -149,22 +143,20 @@ async function parseVideoMetadata(file) {
   }
 
   if (hasUserData) {
-    metadata['Container Atom'] = "MOOV / UDTA / META";
-    metadata['Creation/Modify Info'] = "Mevcut (GPS / Cihaz / Tarih etiketi barındırıyor)";
-    metadata['GPS/Device Location'] = "Ayrıştırılmış Konum Bağlamı Tespit Edildi";
-    metadata['Format'] = file.type || 'video/mp4';
-    metadata['Boyut'] = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
-    return metadata;
-  } else {
-    return null; // Temizlenmiş dosyalarda hassas metadata dönmez
+    return {
+      'Container Atom': "MOOV / UDTA / META",
+      'Creation/Modify Info': "Mevcut (GPS / Cihaz / Tarih etiketi barındırıyor)",
+      'GPS/Device Location': "Ayrıştırılmış Konum Bağlamı Tespit Edildi",
+      'Format': file.type || 'video/mp4',
+      'Boyut': (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+    };
   }
+  return null;
 }
 
-// Derinlemesine MP4/MOV Metadata Temizleme
 async function stripVideoMetadata(file) {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
-  
   const targetAtoms = ['udta', 'meta', 'ilst', 'uuid', 'XMP_'];
 
   for (let i = 0; i < bytes.length - 4; i++) {
@@ -211,6 +203,7 @@ async function handleFiles(files) {
       isVideo: isVideo,
       rotation: 0,
       flipH: false,
+      previewUrl: null,
       convertedBlob: null,
       naturalWidth: 0,
       naturalHeight: 0
@@ -303,7 +296,7 @@ function updateUI() {
           <p class="text-[10px] text-zinc-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" data-index="${index}" class="delete-single-btn p-1.5 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer">
+      <button type="button" class="delete-single-btn p-1.5 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer">
         <i class="fa-solid fa-xmark text-xs pointer-events-none"></i>
       </button>
     `;
@@ -324,22 +317,42 @@ function updateUI() {
 }
 
 function removeItemByIndex(index) {
+  if (queue[index] && queue[index].previewUrl) {
+    URL.revokeObjectURL(queue[index].previewUrl);
+  }
   queue.splice(index, 1);
-  if (queue.length === 0) selectedIndex = null;
-  else if (selectedIndex >= queue.length) selectedIndex = queue.length - 1;
+  
+  if (queue.length === 0) {
+    selectedIndex = null;
+  } else if (selectedIndex >= queue.length) {
+    selectedIndex = queue.length - 1;
+  }
   
   updateUI();
-  if (selectedIndex !== null && queue[selectedIndex]) selectFile(selectedIndex);
-  else resetInspector();
+  if (selectedIndex !== null && queue[selectedIndex]) {
+    selectFile(selectedIndex);
+  } else {
+    resetInspector();
+  }
 }
 
 function updatePreviewTransform() {
-  const previewImg = document.getElementById('imagePreview');
-  if (!previewImg || selectedIndex === null || !queue[selectedIndex]) return;
+  if (selectedIndex === null || !queue[selectedIndex]) return;
 
   const item = queue[selectedIndex];
   const scaleX = item.flipH ? -1 : 1;
-  previewImg.style.transform = `rotate(${item.rotation}deg) scaleX(${scaleX})`;
+  const transformStyle = `rotate(${item.rotation}deg) scaleX(${scaleX})`;
+
+  const previewImg = document.getElementById('imagePreview');
+  const previewVideo = document.getElementById('videoPreview');
+
+  if (item.isVideo && previewVideo) {
+    previewVideo.style.transform = transformStyle;
+    previewVideo.style.transition = 'transform 0.3s ease';
+  } else if (previewImg) {
+    previewImg.style.transform = transformStyle;
+    previewImg.style.transition = 'transform 0.3s ease';
+  }
 }
 
 async function selectFile(index) {
@@ -358,28 +371,38 @@ async function selectFile(index) {
 
   if (previewContainer) previewContainer.classList.remove('hidden');
 
+  if (!item.previewUrl) {
+    if (item.isVideo) {
+      item.previewUrl = URL.createObjectURL(item.file);
+    } else {
+      const sourceBlob = await getImageSourceBlob(item);
+      item.previewUrl = URL.createObjectURL(sourceBlob);
+    }
+  }
+
   if (item.isVideo) {
     if (previewImg) previewImg.classList.add('hidden');
     if (previewVideo) {
       previewVideo.classList.remove('hidden');
-      previewVideo.src = URL.createObjectURL(item.file);
+      previewVideo.src = item.previewUrl;
+      previewVideo.load();
     }
   } else {
-    if (previewVideo) previewVideo.classList.add('hidden');
+    if (previewVideo) {
+      previewVideo.pause();
+      previewVideo.classList.add('hidden');
+    }
     if (previewImg) {
       previewImg.classList.remove('hidden');
-      const sourceBlob = await getImageSourceBlob(item);
-      previewImg.src = URL.createObjectURL(sourceBlob);
-      
+      previewImg.src = item.previewUrl;
       previewImg.onload = () => {
         item.naturalWidth = previewImg.naturalWidth;
         item.naturalHeight = previewImg.naturalHeight;
       };
-      
-      updatePreviewTransform();
     }
   }
 
+  updatePreviewTransform();
   renderInspectorData(item);
   updateUI();
 }
@@ -464,6 +487,9 @@ document.getElementById('qualityRange')?.addEventListener('input', (e) => {
 
 document.getElementById('clearAllBtn')?.addEventListener('click', (e) => {
   e.preventDefault();
+  queue.forEach(item => {
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  });
   queue = [];
   selectedIndex = null;
   updateUI();
@@ -650,7 +676,6 @@ document.getElementById('zipBtn')?.addEventListener('click', async () => {
   triggerDownload(content, 'EXIF_Cleaned_Files.zip');
 });
 
-// Modal Kontrolleri
 const settingsModal = document.getElementById('settingsModal');
 const feedbackModal = document.getElementById('feedbackModal');
 

@@ -43,6 +43,14 @@ jobs:
         # Portatif ZIP paketi olustur
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
+    - name: installer.iss Dosyasındaki Versiyonu Otomatik Güncelle
+      shell: powershell
+      run: |
+        $tagVersion = "${{ github.ref_name }}".Replace('v', '')
+        if (Test-Path "installer.iss") {
+          (Get-Content "installer.iss") -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$tagVersion`"" | Set-Content "installer.iss"
+        }
+
     # Chocolatey ile Inno Setup Kurulumu ve Derleme
     - name: Inno Setup ile Setup.exe Oluştur
       shell: powershell
