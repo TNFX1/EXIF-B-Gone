@@ -356,6 +356,7 @@ function triggerDownload(blob, fileName) {
   }, 300);
 }
 
+// Görseli İşleme, Kalite ve Format Dönüştürme Mantığı
 async function processImage(item) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -381,6 +382,16 @@ async function processImage(item) {
       canvas.height = renderH;
 
       const ctx = canvas.getContext('2d');
+      
+      // JPEG veya şeffaflığı desteklemeyen formatlar için arka planı beyaz yap
+      const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
+      const targetMime = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
+
+      if (targetMime === 'image/jpeg') {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate((item.rotation * Math.PI) / 180);
       if (item.flipH) ctx.scale(-1, 1);
@@ -389,14 +400,21 @@ async function processImage(item) {
       const drawH = is90 ? canvas.width : canvas.height;
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
-      const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
-      const targetFormat = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
+      // Kalite Değerini Al
       const qualityRange = document.getElementById('qualityRange');
       const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
 
+      // Dosya Uzantısını Hedef Formata Göre Güncelle
+      let newName = item.name;
+      const nameWithoutExt = newName.substring(0, newName.lastIndexOf('.')) || newName;
+
+      if (targetMime === 'image/jpeg') newName = `${nameWithoutExt}.jpg`;
+      else if (targetMime === 'image/png') newName = `${nameWithoutExt}.png`;
+      else if (targetMime === 'image/webp') newName = `${nameWithoutExt}.webp`;
+
       canvas.toBlob((blob) => {
-        resolve({ blob, name: item.name, type: targetFormat });
-      }, targetFormat, quality);
+        resolve({ blob, name: newName, type: targetMime });
+      }, targetMime, quality);
     };
     img.src = URL.createObjectURL(item.file);
   });
@@ -468,7 +486,7 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
   }
 });
 
-// Geri Bildirim Gönderme (Sorunsuz AJAX/Form Payload)
+// Geri Bildirim Gönderme (FormData & Fallback)
 document.getElementById('feedbackForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('feedbackEmail')?.value || 'no-reply@exifbgone.app';
@@ -499,11 +517,10 @@ document.getElementById('feedbackForm')?.addEventListener('submit', async (e) =>
       document.getElementById('feedbackForm').reset();
       feedbackModal?.classList.add('hidden');
     } else {
-      // Eğer Formspree hesabı doğrulama bekliyorsa veya ID hatalıysa yedek yönlendirme:
       if (typeof nw !== 'undefined' && nw.Shell) {
         nw.Shell.openExternal(`mailto:support@exifbgone.app?subject=EXIF-B-Gone Feedback&body=${encodeURIComponent(message)}`);
       }
-      alert(currentLang === 'tr' ? 'Geri bildirim servisine erişilemedi. Lütfen Formspree paneli ayarlarından AJAX isteklerine izin verdiğinizden emin olun.' : 'Failed to submit feedback.');
+      alert(currentLang === 'tr' ? 'Geri bildirim gönderilemedi.' : 'Failed to submit feedback.');
     }
   } catch (error) {
     alert(currentLang === 'tr' ? 'Bağlantı hatası oluştu.' : 'Connection error occurred.');
