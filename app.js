@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Formspree Endpoint
   const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
   let queue = [];
@@ -68,8 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
       inspectorClean: "Dosya temiz. Hassas EXIF, GPS veya cihaz metadatsı tespit edilmedi.",
       feedbackSuccess: "Teşekkürler! Geri bildiriminiz başarıyla iletildi.",
       footerText: "EXIF-B-Gone • Açık Kaynaklı Gizlilik Aracı",
-      settingsTitle: "Settings",
-      langLabel: "App Language",
+      settingsTitle: "Ayarlar",
+      langLabel: "Uygulama Dili",
       feedbackTitle: "Geri Bildirim Gönder",
       phFeedbackEmail: "E-posta Adresiniz (isteğe bağlı)",
       phFeedbackMessage: "Görüş, öneri veya karşılaştığınız hatayı yazın...",
@@ -187,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
   document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
 
-  // Gerçek Formspree İstek Kontrolü
   feedbackForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -195,10 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = document.getElementById('feedbackEmail')?.value || '';
     const message = document.getElementById('feedbackMessage')?.value || '';
 
-    if (!message.trim()) {
-      alert("Lütfen mesaj alanını doldurun.");
-      return;
-    }
+    if (!message.trim()) return;
 
     if (sendBtn) {
       sendBtn.disabled = true;
@@ -215,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({
           email: email,
           message: message,
-          _subject: "EXIF-B-Gone Yeni Geri Bildirim!",
+          _subject: "EXIF-B-Gone Feedback",
           app_version: "v1.5.0"
         })
       });
@@ -226,13 +221,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const dict = i18n[currentLang] || i18n.en;
         showToast(dict.feedbackSuccess);
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Formspree Hata Detayı:", errorData);
-        alert("Geri bildirim gönderilemedi. Formspree e-posta aktivasyonunuzu kontrol edin.");
+        alert("Geri bildirim gönderilemedi. Lütfen bağlantınızı kontrol edin.");
       }
     } catch (error) {
-      console.error("Feedback Gönderim Hatası:", error);
-      alert("Ağ hatası oluştu. Lütfen bağlantınızı kontrol edin.");
+      console.error("Feedback Hatası:", error);
+      alert("Gönderim esnasında bir hata oluştu.");
     } finally {
       if (sendBtn) {
         sendBtn.disabled = false;
@@ -263,7 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
         size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
         type: isVideo ? 'video' : 'image',
         exifParsed: false,
-        exifData: null
+        exifData: null,
+        previewUrl: null
       });
     });
     updateQueueUI();
@@ -362,6 +356,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // HEIC Dönüştürme Desteği
+  async function getImagePreviewUrl(item) {
+    if (item.previewUrl) return item.previewUrl;
+
+    const isHeic = item.name.match(/\.(heic|heif)$/i);
+    if (isHeic && typeof heic2any !== 'undefined') {
+      try {
+        const convertedBlob = await heic2any({
+          blob: item.file,
+          toType: "image/jpeg",
+          quality: 0.8
+        });
+        const blobObj = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        item.previewUrl = URL.createObjectURL(blobObj);
+        return item.previewUrl;
+      } catch (e) {
+        console.error("HEIC conversion error:", e);
+      }
+    }
+
+    item.previewUrl = URL.createObjectURL(item.file);
+    return item.previewUrl;
+  }
+
   async function selectItem(index) {
     selectedIndex = index;
     updateQueueUI();
@@ -369,16 +387,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!item) return;
 
     updateFormatDropdown(item.type);
-
     selectedFileName.textContent = item.name;
     previewContainer.classList.remove('hidden');
-
-    const url = URL.createObjectURL(item.file);
 
     if (item.type === 'video') {
       imagePreview.classList.add('hidden');
       videoPreview.classList.remove('hidden');
-      videoPreview.src = url;
+      videoPreview.src = URL.createObjectURL(item.file);
 
       if (!item.exifParsed) {
         item.exifData = await scanVideoMetadata(item.file);
@@ -387,7 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       videoPreview.classList.add('hidden');
       imagePreview.classList.remove('hidden');
-      imagePreview.src = url;
+      
+      const imgUrl = await getImagePreviewUrl(item);
+      imagePreview.src = imgUrl;
 
       if (!item.exifParsed && typeof exifr !== 'undefined') {
         try {
@@ -468,7 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   async function processImage(item) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
+      const imgUrl = await getImagePreviewUrl(item);
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -513,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
           resolve({ blob, format: ext });
         }, mimeType, quality);
       };
-      img.src = URL.createObjectURL(item.file);
+      img.src = imgUrl;
     });
   }
 
