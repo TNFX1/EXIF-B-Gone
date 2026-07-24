@@ -1,19 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Formspree Endpoint
+  const CURRENT_VERSION = "v1.5.0";
+  const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
   const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
   let queue = [];
   let selectedIndex = -1;
   let currentRotation = 0;
   let currentFlip = false;
-  let currentScale = 1;
-  let currentLang = localStorage.getItem('app_lang') || 'en';
+  let currentLang = localStorage.getItem('app_lang');
 
   const i18n = {
     en: {
       subtitle: "Strip unwanted metadata from your photos & videos.",
       btnFeedback: "Feedback",
+      settingsTitle: "Settings",
+      langLabel: "App Language",
+      updateLabel: "Software Updates",
+      currVer: `Current Version: ${CURRENT_VERSION}`,
+      btnCheck: "Check",
       dragTitle: "Drop your photos or videos here or click to browse",
       dragSub: "All files processed locally on your RAM, zero cloud upload.",
       outFormat: "Export Format",
@@ -44,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
     tr: {
       subtitle: "Fotoğraf ve videolarınızdaki istenmeyen gizli verileri (EXIF) temizleyin.",
       btnFeedback: "Geri Bildirim",
+      settingsTitle: "Ayarlar",
+      langLabel: "Uygulama Dili",
+      updateLabel: "Yazılım Güncellemeleri",
+      currVer: `Mevcut Sürüm: ${CURRENT_VERSION}`,
+      btnCheck: "Denetle",
       dragTitle: "Fotoğraf veya videolarınızı buraya sürükleyin veya seçin",
       dragSub: "Tüm işlemler RAM üzerinde gerçekleşir, sunucuya hiçbir veri yüklenmez.",
       outFormat: "Dışa Aktarım Formatı",
@@ -73,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // DOM Elements (index.html ile tam eşleşen ID'ler)
+  // DOM Elements
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('file-input');
   const queueContainer = document.getElementById('queueContainer');
@@ -97,13 +107,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const maxWidthInput = document.getElementById('maxWidthInput');
   const maxHeightInput = document.getElementById('maxHeightInput');
 
+  // Modals & Controls
+  const welcomeModal = document.getElementById('welcomeModal');
+  const welcomeLangEN = document.getElementById('welcomeLangEN');
+  const welcomeLangTR = document.getElementById('welcomeLangTR');
+
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
   const langSelect = document.getElementById('langSelect');
+  const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+  const updateStatus = document.getElementById('updateStatus');
 
   const feedbackBtn = document.getElementById('feedbackBtn');
   const feedbackModal = document.getElementById('feedbackModal');
   const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
   const feedbackForm = document.getElementById('feedbackForm');
   const feedbackStatus = document.getElementById('feedbackStatus');
+
+  // First Time Check
+  if (!currentLang) {
+    welcomeModal?.classList.remove('hidden');
+  } else {
+    updateLanguage(currentLang);
+  }
+
+  welcomeLangEN?.addEventListener('click', () => {
+    updateLanguage('en');
+    welcomeModal?.classList.add('hidden');
+  });
+
+  welcomeLangTR?.addEventListener('click', () => {
+    updateLanguage('tr');
+    welcomeModal?.classList.add('hidden');
+  });
 
   function updateLanguage(lang) {
     currentLang = lang;
@@ -125,10 +162,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (langSelect) {
-    langSelect.addEventListener('change', (e) => updateLanguage(e.target.value));
-  }
-  updateLanguage(currentLang);
+  // Settings Modal Controls
+  settingsBtn?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
+  closeSettingsBtn?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
+  langSelect?.addEventListener('change', (e) => updateLanguage(e.target.value));
+
+  // Check Update via Github API
+  checkUpdateBtn?.addEventListener('click', async () => {
+    if (updateStatus) updateStatus.textContent = "Checking Github releases...";
+    try {
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const latestTag = data.tag_name;
+
+      if (latestTag && latestTag !== CURRENT_VERSION) {
+        updateStatus.innerHTML = `<span class="text-rose-400 font-bold">New update available: ${latestTag}</span>`;
+      } else {
+        updateStatus.innerHTML = `<span class="text-emerald-400">You are using the latest version!</span>`;
+      }
+    } catch (err) {
+      if (updateStatus) updateStatus.textContent = "Failed to check updates.";
+    }
+  });
 
   if (qualitySlider && qualityValue) {
     qualitySlider.addEventListener('input', (e) => {
@@ -136,35 +192,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // File Drop & Click Logic (Düzeltildi)
+  // File Upload Logic
   if (dropZone && fileInput) {
     dropZone.addEventListener('click', (e) => {
-      fileInput.click();
-    });
-    
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('border-rose-500/50', 'bg-rose-500/5');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
-      if (e.dataTransfer.files && e.dataTransfer.files.length) {
-        handleFiles(Array.from(e.dataTransfer.files));
+      if (e.target !== fileInput) {
+        fileInput.click();
       }
     });
 
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files.length) {
-        handleFiles(Array.from(e.target.files));
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        handleFiles(Array.from(fileInput.files));
         fileInput.value = '';
       }
     });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add('border-rose-500', 'bg-rose-500/10');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove('border-rose-500', 'bg-rose-500/10');
+      }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length > 0) {
+        handleFiles(Array.from(dt.files));
+      }
+    }, false);
   }
 
   async function handleFiles(files) {
@@ -236,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
       queueContainer.innerHTML = `
         <div class="flex flex-col items-center justify-center h-32 text-zinc-600 gap-2">
           <i class="fa-solid fa-folder-open text-2xl"></i>
-          <span class="text-xs" data-i18n="emptyState">${i18n[currentLang].emptyState}</span>
+          <span class="text-xs" data-i18n="emptyState">${i18n[currentLang || 'en'].emptyState}</span>
         </div>
       `;
       resetInspector();
@@ -307,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function resetInspector() {
-    if (inspectorPreview) inspectorPreview.innerHTML = `<span class="text-xs text-zinc-600" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</span>`;
+    if (inspectorPreview) inspectorPreview.innerHTML = `<span class="text-xs text-zinc-600" data-i18n="inspectorEmpty">${i18n[currentLang || 'en'].inspectorEmpty}</span>`;
     if (metadataTable) metadataTable.innerHTML = '';
     if (inspectorEmptyState) inspectorEmptyState.classList.remove('hidden');
   }
@@ -349,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         metadataTable.innerHTML = `
           <div class="flex flex-col items-center justify-center p-6 text-emerald-400 gap-2 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
             <i class="fa-solid fa-shield-check text-xl"></i>
-            <span class="text-xs font-medium text-center" data-i18n="inspectorClean">${i18n[currentLang].inspectorClean}</span>
+            <span class="text-xs font-medium text-center" data-i18n="inspectorClean">${i18n[currentLang || 'en'].inspectorClean}</span>
           </div>
         `;
       }
@@ -362,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
   flipHBtn?.addEventListener('click', () => { currentFlip = !currentFlip; renderInspector(); });
   resetTransformBtn?.addEventListener('click', () => { currentRotation = 0; currentFlip = false; renderInspector(); });
 
-  // Deep Pixel & Metadata Sanitization Engine
+  // Processing Functions
   async function processImage(item) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -389,7 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.height = height;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-        // Temiz piksel çizimi: Tuvali tamamen temizle (tüm kalıntı EXIF/header verilerini sıfırlar)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (currentRotation !== 0 || currentFlip) {
@@ -552,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (resp.ok) {
         if (feedbackStatus) {
           feedbackStatus.className = 'text-xs text-emerald-400 font-medium text-center';
-          feedbackStatus.textContent = i18n[currentLang].feedbackSuccess;
+          feedbackStatus.textContent = i18n[currentLang || 'en'].feedbackSuccess;
         }
         feedbackForm.reset();
         setTimeout(() => {
@@ -565,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       if (feedbackStatus) {
         feedbackStatus.className = 'text-xs text-rose-400 font-medium text-center';
-        feedbackStatus.textContent = i18n[currentLang].feedbackError;
+        feedbackStatus.textContent = i18n[currentLang || 'en'].feedbackError;
       }
     }
   });
