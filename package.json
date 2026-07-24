@@ -1,22 +1,14 @@
 {
   "name": "exif-b-gone",
   "version": "1.5.0",
-  "description": "Strip unwanted metadata from your photos & videos locally.",
   "main": "index.html",
   "window": {
     "title": "EXIF-B-Gone",
     "icon": "icon.png",
-    "width": 1280,
-    "height": 800,
-    "min_width": 1024,
-    "min_height": 720,
-    "position": "center",
-    "resizable": true,
-    "frame": true
-  },
-  "scripts": {
-    "start": "nw ."
-  },
-  "author": "TNFX1",
-  "license": "MIT"
+    "width": 1100,
+    "height": 750,
+    "min_width": 900,
+    "min_height": 600,
+    "position": "center"
+  }
 }

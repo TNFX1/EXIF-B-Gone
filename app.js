@@ -33,447 +33,332 @@ document.addEventListener('DOMContentLoaded', () => {
       btnZip: "Download ZIP",
       inspectorTitle: "Privacy Inspector",
       inspectorEmpty: "Select a file to inspect embedded metadata.",
-      inspectorClean: "File is clean. No sensitive EXIF, GPS or device metadata detected.",
-      feedbackSuccess: "Thank you! Your feedback has been sent successfully.",
-      footerText: "EXIF-B-Gone • Open Source Privacy Tool",
-      settingsTitle: "Settings",
-      langLabel: "App Language",
+      inspectorClean: "File is completely clean! Zero metadata embedded.",
       feedbackTitle: "Send Feedback",
       phFeedbackEmail: "Your Email (optional)",
       phFeedbackMessage: "Write your thoughts or issues...",
-      btnSendFeedback: "Send"
+      btnSubmitFeedback: "Send Feedback",
+      feedbackSuccess: "Thank you for your feedback!",
+      feedbackError: "Failed to send feedback. Please try again."
     },
     tr: {
-      subtitle: "Fotoğraf ve Videolarınızın izlerini sıfırlayın.",
+      subtitle: "Fotoğraf ve videolarınızdaki istenmeyen gizli verileri (EXIF) temizleyin.",
       btnFeedback: "Geri Bildirim",
-      dragTitle: "Fotoğraf veya Videolarınızı buraya bırakın",
-      dragSub: "Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.",
-      outFormat: "Çıktı Formatı",
-      resizeMax: "Boyut (Genişlik x Yükseklik)",
-      phWidth: "Gen (px)",
-      phHeight: "Yük (px)",
+      dragTitle: "Fotoğraf veya videolarınızı buraya sürükleyin veya seçin",
+      dragSub: "Tüm işlemler RAM üzerinde gerçekleşir, sunucuya hiçbir veri yüklenmez.",
+      outFormat: "Dışa Aktarım Formatı",
+      resizeMax: "Boyutlandır (Genişlik x Yükseklik)",
+      phWidth: "Genişlik (px)",
+      phHeight: "Yükseklik (px)",
       qualityLabel: "Kalite",
       lblTransform: "Döndür / Çevir:",
       btnRotateLeft: "Sola",
       btnRotateRight: "Sağa",
-      btnFlipH: "Aynala",
+      btnFlipH: "Çevir",
       btnResetScale: "Sıfırla",
-      queueTitle: "İşlem Kuyruğu",
+      queueTitle: "Kuyruk",
       btnClear: "Temizle",
       emptyState: "Kuyrukta dosya yok.",
-      btnProcess: "Temizle & İndir",
-      btnZip: "ZIP İndir",
-      inspectorTitle: "Gizlilik Analizi",
-      inspectorEmpty: "Dosya seçerek içeride kalan gizli verileri kontrol edin.",
-      inspectorClean: "Dosya temiz. Hassas EXIF, GPS veya cihaz metadatsı tespit edilmedi.",
-      feedbackSuccess: "Teşekkürler! Geri bildiriminiz başarıyla iletildi.",
-      footerText: "EXIF-B-Gone • Açık Kaynaklı Gizlilik Aracı",
-      settingsTitle: "Settings",
-      langLabel: "App Language",
+      btnProcess: "Temizle ve İndir",
+      btnZip: "ZIP Olarak İndir",
+      inspectorTitle: "Gizlilik İnceleyicisi",
+      inspectorEmpty: "Gizli verileri görmek için bir dosya seçin.",
+      inspectorClean: "Dosya tamamen temiz! Hiçbir gizli veri bulunamadı.",
       feedbackTitle: "Geri Bildirim Gönder",
-      phFeedbackEmail: "E-posta Adresiniz (isteğe bağlı)",
-      phFeedbackMessage: "Görüş, öneri veya karşılaştığınız hatayı yazın...",
-      btnSendFeedback: "Gönder"
+      phFeedbackEmail: "E-postanız (isteğe bağlı)",
+      phFeedbackMessage: "Düşüncelerinizi veya karşılaştığınız sorunları yazın...",
+      btnSubmitFeedback: "Gönder",
+      feedbackSuccess: "Geri bildiriminiz için teşekkür ederiz!",
+      feedbackError: "Gönderim başarısız oldu. Lütfen tekrar deneyin."
     }
   };
 
-  const dropzone = document.getElementById('dropzone');
+  // DOM Elements
+  const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('fileInput');
-  const fileList = document.getElementById('fileList');
-  const emptyState = document.getElementById('emptyState');
-  const fileCount = document.getElementById('fileCount');
+  const queueContainer = document.getElementById('queueContainer');
+  const queueCount = document.getElementById('queueCount');
+  const clearQueueBtn = document.getElementById('clearQueueBtn');
   const processBtn = document.getElementById('processBtn');
   const zipBtn = document.getElementById('zipBtn');
-  const clearAllBtn = document.getElementById('clearAllBtn');
   
-  const exportFormat = document.getElementById('exportFormat');
-  const maxWidthInput = document.getElementById('maxWidthInput');
-  const maxHeightInput = document.getElementById('maxHeightInput');
-  const qualityRange = document.getElementById('qualityRange');
-  const qualityVal = document.getElementById('qualityVal');
-
+  const inspectorPreview = document.getElementById('inspectorPreview');
+  const metadataTable = document.getElementById('metadataTable');
+  const inspectorEmptyState = document.getElementById('inspectorEmptyState');
+  
   const rotateLeftBtn = document.getElementById('rotateLeftBtn');
   const rotateRightBtn = document.getElementById('rotateRightBtn');
   const flipHBtn = document.getElementById('flipHBtn');
-  const scale50Btn = document.getElementById('scale50Btn');
-  const scale75Btn = document.getElementById('scale75Btn');
-  const resetScaleBtn = document.getElementById('resetScaleBtn');
+  const resetTransformBtn = document.getElementById('resetTransformBtn');
 
-  const previewContainer = document.getElementById('previewContainer');
-  const imagePreview = document.getElementById('imagePreview');
-  const videoPreview = document.getElementById('videoPreview');
-  const exifInspector = document.getElementById('exifInspector');
-  const selectedFileName = document.getElementById('selectedFileName');
+  const qualitySlider = document.getElementById('qualitySlider');
+  const qualityValue = document.getElementById('qualityValue');
+  const exportFormat = document.getElementById('exportFormat');
+  const maxWidthInput = document.getElementById('maxWidthInput');
+  const maxHeightInput = document.getElementById('maxHeightInput');
 
-  const settingsModal = document.getElementById('settingsModal');
-  const feedbackModal = document.getElementById('feedbackModal');
-  const feedbackForm = document.getElementById('feedbackForm');
-  const toast = document.getElementById('toast');
-  const toastMsg = document.getElementById('toastMsg');
   const langSelect = document.getElementById('langSelect');
 
-  function showToast(msg) {
-    if (!toast || !toastMsg) return;
-    toastMsg.textContent = msg;
-    toast.classList.remove('translate-y-20', 'opacity-0');
-    setTimeout(() => {
-      toast.classList.add('translate-y-20', 'opacity-0');
-    }, 3500);
-  }
+  const feedbackBtn = document.getElementById('feedbackBtn');
+  const feedbackModal = document.getElementById('feedbackModal');
+  const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
+  const feedbackForm = document.getElementById('feedbackForm');
+  const feedbackStatus = document.getElementById('feedbackStatus');
 
-  function applyLanguage(lang) {
+  function updateLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('app_lang', lang);
-    const dict = i18n[lang] || i18n.en;
+    if (langSelect) langSelect.value = lang;
 
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      if (dict[key] && el.tagName !== 'OPTION') el.textContent = dict[key];
+      if (i18n[lang] && i18n[lang][key]) {
+        el.textContent = i18n[lang][key];
+      }
     });
 
     document.querySelectorAll('[data-i18n-ph]').forEach(el => {
       const key = el.getAttribute('data-i18n-ph');
-      if (dict[key]) el.placeholder = dict[key];
+      if (i18n[lang] && i18n[lang][key]) {
+        el.placeholder = i18n[lang][key];
+      }
     });
-
-    if (langSelect) langSelect.value = lang;
-
-    if (selectedIndex >= 0 && queue[selectedIndex]) {
-      renderInspector(queue[selectedIndex]);
-    }
   }
 
-  function updateFormatDropdown(type) {
-    if (!exportFormat) return;
-    const currentVal = exportFormat.value;
+  if (langSelect) {
+    langSelect.addEventListener('change', (e) => updateLanguage(e.target.value));
+  }
+  updateLanguage(currentLang);
 
-    if (type === 'video') {
-      exportFormat.innerHTML = `
-        <option value="original">Original Format (Default)</option>
-        <option value="mp4">MP4 (.mp4)</option>
-        <option value="webm">WebM (.webm)</option>
-        <option value="mkv">MKV (.mkv)</option>
-        <option value="avi">AVI (.avi)</option>
-      `;
-    } else if (type === 'image') {
-      exportFormat.innerHTML = `
-        <option value="original">Original Format (Default)</option>
-        <option value="jpeg">JPEG (.jpg)</option>
-        <option value="png">PNG (.png)</option>
-        <option value="webp">WebP (.webp)</option>
-      `;
-    } else {
-      exportFormat.innerHTML = `
-        <option value="original">Original Format (Default)</option>
-        <option value="jpeg">JPEG (.jpg)</option>
-        <option value="png">PNG (.png)</option>
-        <option value="webp">WebP (.webp)</option>
-        <option value="mp4">MP4 (.mp4)</option>
-        <option value="webm">WebM (.webm)</option>
-      `;
-    }
-
-    const exists = Array.from(exportFormat.options).some(opt => opt.value === currentVal);
-    if (exists) exportFormat.value = currentVal;
-    else exportFormat.value = "original";
+  if (qualitySlider && qualityValue) {
+    qualitySlider.addEventListener('input', (e) => {
+      qualityValue.textContent = `${e.target.value}%`;
+    });
   }
 
-  qualityRange?.addEventListener('input', (e) => {
-    if (qualityVal) qualityVal.textContent = `${Math.round(e.target.value * 100)}%`;
-  });
-
-  document.getElementById('openSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
-  document.getElementById('closeSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
-  document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
-  document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
-
-  // Gerçek Formspree İstek Kontrolü
-  feedbackForm?.addEventListener('submit', async (e) => {
+  // File Drop
+  dropZone?.addEventListener('click', () => fileInput?.click());
+  
+  dropZone?.addEventListener('dragover', (e) => {
     e.preventDefault();
-
-    const sendBtn = document.getElementById('sendFeedbackBtn');
-    const email = document.getElementById('feedbackEmail')?.value || '';
-    const message = document.getElementById('feedbackMessage')?.value || '';
-
-    if (!message.trim()) {
-      alert("Lütfen mesaj alanını doldurun.");
-      return;
-    }
-
-    if (sendBtn) {
-      sendBtn.disabled = true;
-      sendBtn.style.opacity = "0.5";
-    }
-
-    try {
-      const response = await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: email,
-          message: message,
-          _subject: "EXIF-B-Gone Yeni Geri Bildirim!",
-          app_version: "v1.5.0"
-        })
-      });
-
-      if (response.ok) {
-        feedbackModal?.classList.add('hidden');
-        feedbackForm.reset();
-        const dict = i18n[currentLang] || i18n.en;
-        showToast(dict.feedbackSuccess);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Formspree Hata Detayı:", errorData);
-        alert("Geri bildirim gönderilemedi. Formspree e-posta aktivasyonunuzu kontrol edin.");
-      }
-    } catch (error) {
-      console.error("Feedback Gönderim Hatası:", error);
-      alert("Ağ hatası oluştu. Lütfen bağlantınızı kontrol edin.");
-    } finally {
-      if (sendBtn) {
-        sendBtn.disabled = false;
-        sendBtn.style.opacity = "1";
-      }
-    }
+    dropZone.classList.add('border-rose-500/50', 'bg-rose-500/5');
   });
 
-  langSelect?.addEventListener('change', (e) => applyLanguage(e.target.value));
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
+  });
 
-  dropzone?.addEventListener('click', () => fileInput.click());
-  dropzone?.addEventListener('dragover', (e) => e.preventDefault());
-  dropzone?.addEventListener('drop', (e) => {
+  dropZone?.addEventListener('drop', (e) => {
     e.preventDefault();
-    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+    dropZone.classList.remove('border-rose-500/50', 'bg-rose-500/5');
+    if (e.dataTransfer.files.length) {
+      handleFiles(Array.from(e.dataTransfer.files));
+    }
   });
+
   fileInput?.addEventListener('change', (e) => {
-    if (e.target.files.length) handleFiles(e.target.files);
+    if (e.target.files.length) {
+      handleFiles(Array.from(e.target.files));
+      fileInput.value = '';
+    }
   });
 
-  function handleFiles(files) {
-    Array.from(files).forEach(file => {
-      const isVideo = file.type.startsWith('video') || file.name.match(/\.(mp4|mov|avi|mkv|webm)$/i);
+  async function handleFiles(files) {
+    for (const file of files) {
+      const isImg = file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name);
+      const isVid = file.type.startsWith('video/');
+
+      if (!isImg && !isVid) continue;
+
+      let parsedMeta = null;
+      let displayUrl = null;
+
+      if (isImg) {
+        try {
+          if (typeof exifr !== 'undefined') {
+            parsedMeta = await exifr.parse(file, { tiff: true, xmp: true, icc: true, iptc: true, jfif: true, gps: true });
+          }
+        } catch (err) {
+          console.warn("Exifr parse warning:", err);
+        }
+
+        if (/\.(heic|heif)$/i.test(file.name) && typeof heic2any !== 'undefined') {
+          try {
+            const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+            displayUrl = URL.createObjectURL(Array.isArray(converted) ? converted[0] : converted);
+          } catch (e) {
+            console.error("HEIC convert error:", e);
+          }
+        } else {
+          displayUrl = URL.createObjectURL(file);
+        }
+      } else {
+        displayUrl = URL.createObjectURL(file);
+      }
+
       queue.push({
-        file,
         id: Math.random().toString(36).substring(2, 9),
+        file,
         name: file.name,
-        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-        type: isVideo ? 'video' : 'image',
-        exifParsed: false,
-        exifData: null
+        size: formatBytes(file.size),
+        type: isImg ? 'image' : 'video',
+        url: displayUrl,
+        metadata: parsedMeta
       });
-    });
-    updateQueueUI();
-    if (selectedIndex === -1 && queue.length > 0) selectItem(0);
+    }
+
+    renderQueue();
+    if (queue.length > 0 && selectedIndex === -1) {
+      selectItem(0);
+    }
   }
 
-  function updateQueueUI() {
-    fileCount.textContent = queue.length;
+  function renderQueue() {
+    if (!queueContainer) return;
+    queueContainer.innerHTML = '';
+    
+    if (queueCount) queueCount.textContent = queue.length;
+
     if (queue.length === 0) {
-      emptyState.classList.remove('hidden');
-      fileList.innerHTML = '';
-      fileList.appendChild(emptyState);
-      processBtn.disabled = true;
-      zipBtn.disabled = true;
-      processBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50';
-      zipBtn.className = 'py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50';
-      updateFormatDropdown('all');
-      resetPreview();
+      queueContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-32 text-zinc-600 gap-2">
+          <i class="fa-solid fa-folder-open text-2xl"></i>
+          <span class="text-xs" data-i18n="emptyState">${i18n[currentLang].emptyState}</span>
+        </div>
+      `;
+      resetInspector();
       return;
     }
 
-    emptyState.classList.add('hidden');
-    fileList.innerHTML = '';
-    
-    processBtn.disabled = false;
-    zipBtn.disabled = false;
-    processBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-rose-600 text-white hover:bg-rose-500 cursor-pointer transition-all shadow-lg shadow-rose-600/20';
-    zipBtn.className = 'py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-800 text-zinc-200 hover:bg-zinc-700 cursor-pointer transition-all border border-zinc-700';
-
-    queue.forEach((item, idx) => {
-      const el = document.createElement('div');
-      const isSelected = idx === selectedIndex;
-      el.className = `p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-        isSelected ? 'bg-zinc-800/90 border-rose-500/50' : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
+    queue.forEach((item, index) => {
+      const isSelected = index === selectedIndex;
+      const card = document.createElement('div');
+      card.className = `flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+        isSelected 
+          ? 'bg-rose-500/10 border-rose-500/40 text-rose-200' 
+          : 'bg-zinc-950/60 border-zinc-800/80 hover:border-zinc-700 text-zinc-300'
       }`;
-      
-      el.innerHTML = `
+
+      card.innerHTML = `
         <div class="flex items-center gap-3 overflow-hidden">
-          <i class="fa-regular ${item.type === 'video' ? 'fa-file-video text-rose-400' : 'fa-file-image text-zinc-400'} text-sm"></i>
-          <div class="truncate">
-            <p class="text-xs font-medium text-zinc-200 truncate">${item.name}</p>
-            <p class="text-[10px] text-zinc-500">${item.size}</p>
+          <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-zinc-400 text-xs">
+            <i class="${item.type === 'image' ? 'fa-regular fa-image' : 'fa-solid fa-film'}"></i>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-medium truncate">${item.name}</span>
+            <span class="text-[10px] text-zinc-500">${item.size}</span>
           </div>
         </div>
-        <button class="remove-btn text-zinc-600 hover:text-rose-400 p-1 transition-colors">
-          <i class="fa-solid fa-xmark text-xs"></i>
+        <button class="remove-btn w-6 h-6 rounded-md hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors text-xs">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       `;
 
-      el.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-btn')) {
-          e.stopPropagation();
-          queue.splice(idx, 1);
-          if (selectedIndex >= queue.length) selectedIndex = queue.length - 1;
-          updateQueueUI();
-          if (selectedIndex >= 0) selectItem(selectedIndex);
-        } else {
-          selectItem(idx);
-        }
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-btn')) return;
+        selectItem(index);
       });
 
-      fileList.appendChild(el);
+      card.querySelector('.remove-btn').addEventListener('click', () => {
+        removeItem(index);
+      });
+
+      queueContainer.appendChild(card);
     });
   }
 
-  async function scanVideoMetadata(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      const slice = file.slice(0, 2 * 1024 * 1024);
-      reader.onload = (e) => {
-        const buffer = new Uint8Array(e.target.result);
-        const str = String.fromCharCode.apply(null, buffer.subarray(0, 50000));
-        const extracted = {};
-
-        if (str.includes('moov')) extracted['Container Atom'] = 'moov Atom Present';
-        if (str.includes('udta')) extracted['User Data Atom'] = 'udta Header Found';
-        if (str.includes('meta')) extracted['Metadata Atom'] = 'meta Atom Found';
-        if (str.includes('location') || str.includes('xyz')) extracted['GPS Location'] = 'Coordinates Embedded';
-
-        const encoderMatch = str.match(/(Apple|iPhone|Android|Samsung|Canon|Sony|GoPro|FFmpeg|HandBrake|QuickTime)[a-zA-Z0-9_\-\s]*/i);
-        if (encoderMatch) {
-          extracted['Encoder / Device'] = encoderMatch[0].trim();
-        }
-
-        const dateMatch = str.match(/\b(19|20)\d{2}[:\-\/](0[1-9]|1[0-2])[:\-\/](0[1-9]|[12]\d|3[01])\b/);
-        if (dateMatch) {
-          extracted['Creation / Modify Date'] = dateMatch[0];
-        }
-
-        extracted['Format'] = file.type || 'video/mp4';
-        extracted['File Size'] = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
-
-        resolve(extracted);
-      };
-      reader.readAsArrayBuffer(slice);
-    });
-  }
-
-  async function selectItem(index) {
+  function selectItem(index) {
     selectedIndex = index;
-    updateQueueUI();
-    const item = queue[index];
-    if (!item) return;
+    renderQueue();
+    renderInspector();
+  }
 
-    updateFormatDropdown(item.type);
-
-    selectedFileName.textContent = item.name;
-    previewContainer.classList.remove('hidden');
-
-    const url = URL.createObjectURL(item.file);
-
-    if (item.type === 'video') {
-      imagePreview.classList.add('hidden');
-      videoPreview.classList.remove('hidden');
-      videoPreview.src = url;
-
-      if (!item.exifParsed) {
-        item.exifData = await scanVideoMetadata(item.file);
-        item.exifParsed = true;
-      }
+  function removeItem(index) {
+    queue.splice(index, 1);
+    if (selectedIndex >= queue.length) {
+      selectedIndex = queue.length - 1;
+    }
+    renderQueue();
+    if (selectedIndex >= 0) {
+      renderInspector();
     } else {
-      videoPreview.classList.add('hidden');
-      imagePreview.classList.remove('hidden');
-      imagePreview.src = url;
+      resetInspector();
+    }
+  }
 
-      if (!item.exifParsed && typeof exifr !== 'undefined') {
-        try {
-          item.exifData = await exifr.parse(item.file, {
-            tiff: true,
-            xmp: true,
-            icc: false,
-            jfif: true,
-            ihdr: true
-          });
-        } catch (err) {
-          item.exifData = null;
-        }
-        item.exifParsed = true;
+  clearQueueBtn?.addEventListener('click', () => {
+    queue = [];
+    selectedIndex = -1;
+    renderQueue();
+    resetInspector();
+  });
+
+  function resetInspector() {
+    if (inspectorPreview) inspectorPreview.innerHTML = `<span class="text-xs text-zinc-600" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</span>`;
+    if (metadataTable) metadataTable.innerHTML = '';
+    if (inspectorEmptyState) inspectorEmptyState.classList.remove('hidden');
+  }
+
+  function renderInspector() {
+    if (selectedIndex < 0 || selectedIndex >= queue.length) {
+      resetInspector();
+      return;
+    }
+
+    const item = queue[selectedIndex];
+    if (inspectorEmptyState) inspectorEmptyState.classList.add('hidden');
+
+    if (inspectorPreview) {
+      if (item.type === 'image') {
+        inspectorPreview.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full object-contain rounded-lg shadow-md" style="transform: rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1})">`;
+      } else {
+        inspectorPreview.innerHTML = `<video src="${item.url}" controls class="max-h-full max-w-full rounded-lg shadow-md"></video>`;
       }
     }
 
-    renderInspector(item);
-  }
+    if (metadataTable) {
+      metadataTable.innerHTML = '';
+      if (item.metadata && Object.keys(item.metadata).length > 0) {
+        Object.entries(item.metadata).forEach(([key, val]) => {
+          let displayVal = val;
+          if (val instanceof Date) displayVal = val.toLocaleString();
+          else if (typeof val === 'object') displayVal = JSON.stringify(val);
 
-  function renderInspector(item) {
-    const dict = i18n[currentLang] || i18n.en;
-    const hasMetadata = item.exifData && Object.keys(item.exifData).length > 0;
-
-    if (hasMetadata) {
-      let rows = '';
-      for (const [key, val] of Object.entries(item.exifData)) {
-        if (typeof val === 'object' && !(val instanceof Date)) continue;
-        
-        rows += `
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <span class="text-zinc-400 font-medium truncate max-w-[140px]">${key}</span>
-            <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${String(val)}</span>
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between py-1.5 px-3 rounded-lg bg-zinc-950/40 border border-zinc-900/80 text-xs';
+          row.innerHTML = `
+            <span class="text-zinc-400 font-mono text-[11px]">${key}</span>
+            <span class="text-rose-400 font-medium truncate max-w-[180px] font-mono text-[11px]" title="${displayVal}">${displayVal}</span>
+          `;
+          metadataTable.appendChild(row);
+        });
+      } else {
+        metadataTable.innerHTML = `
+          <div class="flex flex-col items-center justify-center p-6 text-emerald-400 gap-2 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+            <i class="fa-solid fa-shield-check text-xl"></i>
+            <span class="text-xs font-medium text-center" data-i18n="inspectorClean">${i18n[currentLang].inspectorClean}</span>
           </div>
         `;
       }
-
-      if (rows.length > 0) {
-        exifInspector.innerHTML = `<div class="flex flex-col gap-2">${rows}</div>`;
-        return;
-      }
     }
-
-    exifInspector.innerHTML = `
-      <div class="text-center py-10 flex flex-col items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-          <i class="fa-solid fa-shield-check text-base"></i>
-        </div>
-        <p class="text-xs text-emerald-400 font-medium px-4">${dict.inspectorClean}</p>
-      </div>
-    `;
   }
 
-  function resetPreview() {
-    previewContainer.classList.add('hidden');
-    selectedFileName.textContent = '';
-    const dict = i18n[currentLang] || i18n.en;
-    exifInspector.innerHTML = `<div class="text-center py-12 text-zinc-600 text-xs leading-relaxed">${dict.inspectorEmpty}</div>`;
-  }
+  // Transform controls
+  rotateLeftBtn?.addEventListener('click', () => { currentRotation = (currentRotation - 90) % 360; renderInspector(); });
+  rotateRightBtn?.addEventListener('click', () => { currentRotation = (currentRotation + 90) % 360; renderInspector(); });
+  flipHBtn?.addEventListener('click', () => { currentFlip = !currentFlip; renderInspector(); });
+  resetTransformBtn?.addEventListener('click', () => { currentRotation = 0; currentFlip = false; renderInspector(); });
 
-  function updateTransforms() {
-    const transformStr = `rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1}) scale(${currentScale})`;
-    imagePreview.style.transform = transformStr;
-    videoPreview.style.transform = transformStr;
-  }
-
-  rotateLeftBtn?.addEventListener('click', () => { currentRotation -= 90; updateTransforms(); });
-  rotateRightBtn?.addEventListener('click', () => { currentRotation += 90; updateTransforms(); });
-  flipHBtn?.addEventListener('click', () => { currentFlip = !currentFlip; updateTransforms(); });
-  scale50Btn?.addEventListener('click', () => { currentScale = 0.5; updateTransforms(); });
-  scale75Btn?.addEventListener('click', () => { currentScale = 0.75; updateTransforms(); });
-  resetScaleBtn?.addEventListener('click', () => { currentRotation = 0; currentFlip = false; currentScale = 1; updateTransforms(); });
-
-  clearAllBtn?.addEventListener('click', () => {
-    queue = [];
-    selectedIndex = -1;
-    updateQueueUI();
-  });
-
+  // Advanced Deep EXIF Sanitization Engine
   async function processImage(item) {
     return new Promise((resolve) => {
       const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = item.url;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
 
         const maxW = parseInt(maxWidthInput?.value) || 0;
         const maxH = parseInt(maxHeightInput?.value) || 0;
@@ -489,13 +374,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        // Deep pixel sanitization: clear canvas completely to remove metadata residual
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (currentRotation !== 0 || currentFlip) {
+          ctx.save();
           ctx.translate(canvas.width / 2, canvas.height / 2);
           if (currentRotation) ctx.rotate((currentRotation * Math.PI) / 180);
           if (currentFlip) ctx.scale(-1, 1);
           ctx.drawImage(img, -width / 2, -height / 2, width, height);
+          ctx.restore();
         } else {
           ctx.drawImage(img, 0, 0, width, height);
         }
@@ -508,19 +398,19 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (selectedFmt === 'webp') { mimeType = 'image/webp'; ext = 'webp'; }
         else if (selectedFmt === 'jpeg') { mimeType = 'image/jpeg'; ext = 'jpg'; }
 
-        const quality = parseFloat(qualityRange?.value) || 0.9;
+        const qVal = (parseInt(qualitySlider?.value) || 90) / 100;
+
         canvas.toBlob((blob) => {
           resolve({ blob, format: ext });
-        }, mimeType, quality);
+        }, mimeType, qVal);
       };
-      img.src = URL.createObjectURL(item.file);
     });
   }
 
   async function processVideo(item) {
     return new Promise((resolve) => {
       const video = document.createElement('video');
-      video.src = URL.createObjectURL(item.file);
+      video.src = item.url;
       video.muted = true;
       video.playsInline = true;
 
@@ -553,15 +443,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (MediaRecorder.isTypeSupported('video/mp4')) {
           mimeType = 'video/mp4';
+          ext = 'mp4';
         }
 
         const recorder = new MediaRecorder(stream, { mimeType });
         const chunks = [];
 
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunks.push(e.data);
-        };
-
+        recorder.ondataavailable = (e) => chunks.push(e.data);
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           resolve({ blob, format: ext });
@@ -614,12 +502,59 @@ document.addEventListener('DOMContentLoaded', () => {
       zip.file(`cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${result.format}`, result.blob);
     }
 
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const content = await zip.generateAsync({ type: "blob" });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(zipBlob);
-    a.download = 'EXIF-B-Gone_Cleaned.zip';
+    a.href = URL.createObjectURL(content);
+    a.download = "cleaned_files.zip";
     a.click();
   });
 
-  applyLanguage(currentLang);
+  // Feedback Modal Controls
+  feedbackBtn?.addEventListener('click', () => {
+    feedbackModal?.classList.remove('hidden');
+  });
+
+  closeFeedbackBtn?.addEventListener('click', () => {
+    feedbackModal?.classList.add('hidden');
+    if (feedbackStatus) feedbackStatus.textContent = '';
+  });
+
+  feedbackForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('feedbackEmail')?.value;
+    const message = document.getElementById('feedbackMessage')?.value;
+
+    if (feedbackStatus) {
+      feedbackStatus.className = 'text-xs text-zinc-400 font-medium text-center';
+      feedbackStatus.textContent = 'Sending...';
+    }
+
+    try {
+      const resp = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, message })
+      });
+
+      if (resp.ok) {
+        if (feedbackStatus) {
+          feedbackStatus.className = 'text-xs text-emerald-400 font-medium text-center';
+          feedbackStatus.textContent = i18n[currentLang].feedbackSuccess;
+        }
+        feedbackForm.reset();
+        setTimeout(() => {
+          feedbackModal?.classList.add('hidden');
+          if (feedbackStatus) feedbackStatus.textContent = '';
+        }, 1500);
+      } else {
+        throw new Error();
+      }
+    } catch (err) {
+      if (feedbackStatus) {
+        feedbackStatus.className = 'text-xs text-rose-400 font-medium text-center';
+        feedbackStatus.textContent = i18n[currentLang].feedbackError;
+      }
+    }
+  });
+
 });
