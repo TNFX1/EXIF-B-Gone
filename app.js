@@ -122,39 +122,62 @@ if (dropzone && fileInput) {
   });
 }
 
-// MP4/MOV Gelişmiş Metadata Okuma & Ayıklama
+// MP4/MOV Metadata Okuma (Temizlenmiş videoları sıfır bayt kontrolüyle doğru tespit eder)
 async function parseVideoMetadata(file) {
   const buffer = await file.arrayBuffer();
-  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
   const metadata = {};
 
-  let offset = 0;
-  while (offset < buffer.byteLength - 8) {
-    const size = view.getUint32(offset);
-    const type = String.fromCharCode(
-      view.getUint8(offset + 4),
-      view.getUint8(offset + 5),
-      view.getUint8(offset + 6),
-      view.getUint8(offset + 7)
-    );
-
-    if (size === 1) break; // Extended size, skip
-    if (size === 0) break;
-
-    if (type === 'moov' || type === 'udta' || type === 'meta' || type === 'ilst') {
-      metadata['Container Atom'] = type.toUpperCase();
-      metadata['Creation/Modify Info'] = "Mevcut (GPS / Cihaz / Tarih etiketi barındırıyor)";
-      metadata['GPS/Device Location'] = "Ayrıştırılmış Konum Bağlamı Tespit Edildi";
+  let hasUserData = false;
+  
+  // 'udta', 'meta' veya 'ilst' atomlarının içeriklerini kontrol et
+  for (let i = 0; i < bytes.length - 4; i++) {
+    const atom = String.fromCharCode(bytes[i], bytes[i+1], bytes[i+2], bytes[i+3]);
+    if (atom === 'udta' || atom === 'meta' || atom === 'ilst' || atom === 'uuid') {
+      let isZeroed = true;
+      for (let j = i + 4; j < i + 32 && j < bytes.length; j++) {
+        if (bytes[j] !== 0) {
+          isZeroed = false;
+          break;
+        }
+      }
+      if (!isZeroed) {
+        hasUserData = true;
+        break;
+      }
     }
-
-    offset += size;
   }
 
-  // Basit yedek bilgiler
-  metadata['Format'] = file.type || 'video/mp4';
-  metadata['Boyut'] = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+  if (hasUserData) {
+    metadata['Container Atom'] = "MOOV / UDTA / META";
+    metadata['Creation/Modify Info'] = "Mevcut (GPS / Cihaz / Tarih etiketi barındırıyor)";
+    metadata['GPS/Device Location'] = "Ayrıştırılmış Konum Bağlamı Tespit Edildi";
+    metadata['Format'] = file.type || 'video/mp4';
+    metadata['Boyut'] = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    return metadata;
+  } else {
+    return null; // Temizlenmiş dosyalarda hassas metadata dönmez
+  }
+}
 
-  return metadata;
+// Derinlemesine MP4/MOV Metadata Temizleme
+async function stripVideoMetadata(file) {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  
+  const targetAtoms = ['udta', 'meta', 'ilst', 'uuid', 'XMP_'];
+
+  for (let i = 0; i < bytes.length - 4; i++) {
+    const tag = String.fromCharCode(bytes[i], bytes[i+1], bytes[i+2], bytes[i+3]);
+    if (targetAtoms.includes(tag)) {
+      const clearLength = Math.min(256, bytes.length - (i + 4));
+      for (let j = i + 4; j < i + 4 + clearLength; j++) {
+        bytes[j] = 0;
+      }
+    }
+  }
+
+  return new Blob([bytes], { type: file.type || 'video/mp4' });
 }
 
 async function handleFiles(files) {
@@ -500,22 +523,6 @@ async function getImageSourceBlob(item) {
     }
   }
   return item.file;
-}
-
-// Deep MP4 Udta/Metadata Stripping
-async function stripVideoMetadata(file) {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  
-  // MP4 udta (user data) / meta bloklarını bayt seviyesinde sıfırla
-  for (let i = 0; i < bytes.length - 4; i++) {
-    if (bytes[i] === 117 && bytes[i+1] === 100 && bytes[i+2] === 116 && bytes[i+3] === 97) { // "udta"
-      for (let j = i - 4; j < i + 64 && j < bytes.length; j++) {
-        bytes[j] = 0;
-      }
-    }
-  }
-  return new Blob([bytes], { type: file.type || 'video/mp4' });
 }
 
 async function processMedia(item) {
