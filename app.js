@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
       dragTitle: "Drop your photos or videos here or click to browse",
       dragSub: "All files processed locally on your RAM, zero cloud upload.",
       outFormat: "Export Format",
-      optOriginal: "Original Format (Default)",
       resizeMax: "Size (Width x Height)",
       phWidth: "Width (px)",
       phHeight: "Height (px)",
@@ -47,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
       dragTitle: "Fotoğraf veya Videolarınızı buraya bırakın",
       dragSub: "Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.",
       outFormat: "Çıktı Formatı",
-      optOriginal: "Orijinal Format (Varsayılan)",
       resizeMax: "Boyut (Genişlik x Yükseklik)",
       phWidth: "Gen (px)",
       phHeight: "Yük (px)",
@@ -127,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      if (dict[key]) el.textContent = dict[key];
+      // Do not override dropdown option elements
+      if (dict[key] && el.tagName !== 'OPTION') el.textContent = dict[key];
     });
 
     document.querySelectorAll('[data-i18n-ph]').forEach(el => {
@@ -246,6 +245,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Deep Scanner for MP4 / MOV Container Binary Data
+  async function scanVideoMetadata(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      // Read first 2MB for headers & metadata atoms
+      const slice = file.slice(0, 2 * 1024 * 1024);
+      reader.onload = (e) => {
+        const buffer = new Uint8Array(e.target.result);
+        const str = String.fromCharCode.apply(null, buffer.subarray(0, 50000));
+        
+        const extracted = {};
+
+        // Search MP4 Atoms
+        if (str.includes('moov')) extracted['Container Atom'] = 'moov Atom Present';
+        if (str.includes('udta')) extracted['User Data Atom'] = 'udta Header Found';
+        if (str.includes('meta')) extracted['Metadata Atom'] = 'meta Atom Found';
+        if (str.includes('location') || str.includes('xyz')) extracted['GPS Location'] = 'Coordinates Embedded';
+
+        // Search Device or Encoder Strings
+        const encoderMatch = str.match(/(Apple|iPhone|Android|Samsung|Canon|Sony|GoPro|FFmpeg|HandBrake|QuickTime)[a-zA-Z0-9_\-\s]*/i);
+        if (encoderMatch) {
+          extracted['Encoder / Device'] = encoderMatch[0].trim();
+        }
+
+        // Search Dates (YYYY:MM:DD or YYYY-MM-DD)
+        const dateMatch = str.match(/\b(19|20)\d{2}[:\-\/](0[1-9]|1[0-2])[:\-\/](0[1-9]|[12]\d|3[01])\b/);
+        if (dateMatch) {
+          extracted['Creation / Modify Date'] = dateMatch[0];
+        }
+
+        extracted['Format'] = file.type || 'video/mp4';
+        extracted['File Size'] = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+        resolve(extracted);
+      };
+      reader.readAsArrayBuffer(slice);
+    });
+  }
+
   async function selectItem(index) {
     selectedIndex = index;
     updateQueueUI();
@@ -261,26 +299,30 @@ document.addEventListener('DOMContentLoaded', () => {
       imagePreview.classList.add('hidden');
       videoPreview.classList.remove('hidden');
       videoPreview.src = url;
+
+      if (!item.exifParsed) {
+        item.exifData = await scanVideoMetadata(item.file);
+        item.exifParsed = true;
+      }
     } else {
       videoPreview.classList.add('hidden');
       imagePreview.classList.remove('hidden');
       imagePreview.src = url;
-    }
 
-    // Real Metadata Parsing via exifr (Binary Header Inspection)
-    if (!item.exifParsed && typeof exifr !== 'undefined') {
-      try {
-        item.exifData = await exifr.parse(item.file, {
-          tiff: true,
-          xmp: true,
-          icc: false,
-          jfif: true,
-          ihdr: true
-        });
-      } catch (err) {
-        item.exifData = null;
+      if (!item.exifParsed && typeof exifr !== 'undefined') {
+        try {
+          item.exifData = await exifr.parse(item.file, {
+            tiff: true,
+            xmp: true,
+            icc: false,
+            jfif: true,
+            ihdr: true
+          });
+        } catch (err) {
+          item.exifData = null;
+        }
+        item.exifParsed = true;
       }
-      item.exifParsed = true;
     }
 
     renderInspector(item);
@@ -288,14 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderInspector(item) {
     const dict = i18n[currentLang] || i18n.en;
-    
-    // Check if exifData contains actual valid key-values
     const hasMetadata = item.exifData && Object.keys(item.exifData).length > 0;
 
     if (hasMetadata) {
       let rows = '';
       for (const [key, val] of Object.entries(item.exifData)) {
-        // Skip raw buffers or internal unreadable objects
         if (typeof val === 'object' && !(val instanceof Date)) continue;
         
         rows += `
@@ -312,7 +351,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // No sensitive metadata detected after full parse
     exifInspector.innerHTML = `
       <div class="text-center py-10 flex flex-col items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
