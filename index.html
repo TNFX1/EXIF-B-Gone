@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr" class="dark">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,22 +20,20 @@
 
   <header class="border-b border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center shadow-lg shadow-rose-500/20">
-        <i class="fa-solid fa-shield-halved text-white text-base"></i>
-      </div>
+      <img src="icon.png" alt="EXIF-B-Gone Logo" class="w-8 h-8 object-contain rounded-lg">
       <div>
         <div class="flex items-center gap-2">
           <h1 class="font-bold text-sm tracking-wide text-zinc-100">EXIF-B-Gone</h1>
           <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">v1.5.0</span>
         </div>
-        <p class="text-[11px] text-zinc-400" data-i18n="subtitle">Fotoğraf ve Videolarınızın izlerini sıfırlayın.</p>
+        <p class="text-[11px] text-zinc-400" data-i18n="subtitle">Strip unwanted metadata from your photos & videos.</p>
       </div>
     </div>
     
     <div class="flex items-center gap-2">
       <button id="openFeedbackBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs font-medium transition-all flex items-center gap-2 border border-zinc-700/50 cursor-pointer">
         <i class="fa-regular fa-comment-dots text-rose-400"></i>
-        <span data-i18n="btnFeedback">Geri Bildirim</span>
+        <span data-i18n="btnFeedback">Feedback</span>
       </button>
       <button id="openSettingsBtn" type="button" class="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 transition-all border border-zinc-700/50 cursor-pointer">
         <i class="fa-solid fa-gear text-xs"></i>
@@ -53,8 +51,8 @@
           <i class="fa-solid fa-cloud-arrow-up text-zinc-400 group-hover:text-rose-400 transition-colors"></i>
         </div>
         <div class="text-center">
-          <p class="text-xs font-semibold text-zinc-200" data-i18n="dragTitle">Fotoğraf veya Videolarınızı buraya bırakın</p>
-          <p class="text-[11px] text-zinc-500 mt-1" data-i18n="dragSub">Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.</p>
+          <p class="text-xs font-semibold text-zinc-200" data-i18n="dragTitle">Drop your photos or videos here or click to browse</p>
+          <p class="text-[11px] text-zinc-500 mt-1" data-i18n="dragSub">All files processed locally on your RAM, zero cloud upload.</p>
         </div>
       </div>
 
@@ -62,24 +60,24 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           
           <div>
-            <label class="block text-[11px] font-medium text-zinc-400 mb-1" data-i18n="outFormat">Çıktı Formatı</label>
+            <label class="block text-[11px] font-medium text-zinc-400 mb-1" data-i18n="outFormat">Export Format</label>
             <select id="exportFormat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
-              <option value="original">Orijinal Format (Varsayılan)</option>
+              <option value="original" data-i18n="optOriginal">Original Format (Default)</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-[11px] font-medium text-zinc-400 mb-1" data-i18n="resizeMax">Boyut (Genişlik x Yükseklik)</label>
+            <label class="block text-[11px] font-medium text-zinc-400 mb-1" data-i18n="resizeMax">Size (Width x Height)</label>
             <div class="flex items-center gap-1">
-              <input type="number" id="maxWidthInput" placeholder="Gen (px)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+              <input type="number" id="maxWidthInput" placeholder="Gen (px)" data-i18n-ph="phWidth" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
               <span class="text-zinc-600 text-xs">x</span>
-              <input type="number" id="maxHeightInput" placeholder="Yük (px)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+              <input type="number" id="maxHeightInput" placeholder="Yük (px)" data-i18n-ph="phHeight" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
             </div>
           </div>
 
           <div>
             <div class="flex justify-between items-center mb-1">
-              <label class="text-[11px] font-medium text-zinc-400" data-i18n="qualityLabel">Kalite</label>
+              <label class="text-[11px] font-medium text-zinc-400" data-i18n="qualityLabel">Quality</label>
               <span id="qualityVal" class="text-[11px] font-mono text-rose-400">90%</span>
             </div>
             <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.9" class="w-full accent-rose-500 cursor-pointer mt-2">
@@ -88,16 +86,19 @@
         </div>
 
         <div class="flex items-center justify-between border-t border-zinc-800/60 pt-3">
-          <div class="flex items-center gap-1">
-            <button id="rotateLeftBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
-              <i class="fa-solid fa-rotate-left text-[10px]"></i> Sola
-            </button>
-            <button id="rotateRightBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
-              <i class="fa-solid fa-rotate-right text-[10px]"></i> Sağa
-            </button>
-            <button id="flipHBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
-              <i class="fa-solid fa-arrows-left-right text-[10px]"></i> Aynala
-            </button>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-zinc-500 font-medium" data-i18n="lblTransform">Rotate / Flip:</span>
+            <div class="flex items-center gap-1">
+              <button id="rotateLeftBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i> <span data-i18n="btnRotateLeft">Left</span>
+              </button>
+              <button id="rotateRightBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right text-[10px]"></i> <span data-i18n="btnRotateRight">Right</span>
+              </button>
+              <button id="flipHBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-left-right text-[10px]"></i> <span data-i18n="btnFlipH">Flip</span>
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center gap-1">
@@ -107,8 +108,8 @@
             <button id="scale75Btn" type="button" class="px-2 py-1 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 text-[10px] text-zinc-400 transition-colors">
               %75
             </button>
-            <button id="resetScaleBtn" type="button" class="px-2 py-1 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 text-[10px] text-zinc-400 transition-colors">
-              Sıfırla
+            <button id="resetScaleBtn" type="button" class="px-2 py-1 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 text-[10px] text-zinc-400 transition-colors" data-i18n="btnResetScale">
+              Reset
             </button>
           </div>
         </div>
@@ -118,28 +119,28 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-layer-group text-rose-500 text-xs"></i>
-            <span class="text-xs font-semibold text-zinc-200" data-i18n="queueTitle">İşlem Kuyruğu</span>
+            <span class="text-xs font-semibold text-zinc-200" data-i18n="queueTitle">Queue</span>
             <span id="fileCount" class="px-1.5 py-0.2 rounded-full bg-zinc-800 text-[10px] font-mono text-zinc-400">0</span>
           </div>
           <button id="clearAllBtn" type="button" class="text-[11px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer" data-i18n="btnClear">
-            Temizle
+            Clear
           </button>
         </div>
 
         <div id="fileList" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
           <div id="emptyState" class="text-center py-8 text-zinc-600 text-xs" data-i18n="emptyState">
-            Kuyrukta dosya yok.
+            No files in queue.
           </div>
         </div>
 
         <div class="flex items-center gap-2 pt-2 mt-auto border-t border-zinc-800/60">
           <button id="processBtn" disabled class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span data-i18n="btnProcess">Temizle & İndir</span>
+            <span data-i18n="btnProcess">Clean & Download</span>
           </button>
           <button id="zipBtn" disabled class="py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50">
             <i class="fa-solid fa-file-zipper"></i>
-            <span data-i18n="btnZip">ZIP İndir</span>
+            <span data-i18n="btnZip">Download ZIP</span>
           </button>
         </div>
       </div>
@@ -150,7 +151,7 @@
       <div class="flex items-center justify-between border-b border-zinc-800/60 pb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-shield-cat text-rose-500 text-xs"></i>
-          <span class="text-xs font-semibold text-zinc-200" data-i18n="inspectorTitle">Gizlilik Analizi</span>
+          <span class="text-xs font-semibold text-zinc-200" data-i18n="inspectorTitle">Privacy Inspector</span>
         </div>
         <span id="selectedFileName" class="text-[11px] font-mono text-zinc-500 truncate max-w-[150px]"></span>
       </div>
@@ -162,38 +163,31 @@
 
       <div id="exifInspector" class="flex-1 overflow-y-auto max-h-[360px] pr-1">
         <div class="text-center py-12 text-zinc-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">
-          Dosya seçerek içeride kalan gizli verileri kontrol edin.
+          Select a file to inspect embedded metadata.
         </div>
       </div>
     </div>
 
   </main>
 
-  <footer class="border-t border-zinc-800/60 bg-zinc-950 py-3 text-center text-[10px] text-zinc-600">
+  <footer class="border-t border-zinc-800/60 bg-zinc-950 py-3 text-center text-[10px] text-zinc-600" data-i18n="footerText">
     EXIF-B-Gone • Open Source Privacy Tool
   </footer>
 
   <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h3 class="text-sm font-semibold text-zinc-200" data-i18n="settingsTitle">Ayarlar</h3>
+        <h3 class="text-sm font-semibold text-zinc-200" data-i18n="settingsTitle">Settings</h3>
         <button id="closeSettingsBtn" class="text-zinc-500 hover:text-zinc-300 transition-colors">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <div>
-        <label class="block text-xs text-zinc-400 mb-1.5" data-i18n="langLabel">Uygulama Dili</label>
+        <label class="block text-xs text-zinc-400 mb-1.5" data-i18n="langLabel">App Language</label>
         <select id="langSelect" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
-          <option value="tr">Türkçe</option>
           <option value="en">English</option>
+          <option value="tr">Türkçe</option>
         </select>
-      </div>
-      <div class="border-t border-zinc-800/60 pt-3">
-        <label class="block text-xs text-zinc-400 mb-1.5" data-i18n="updateLabel">Güncelleme Durumu</label>
-        <button id="checkUpdateBtn" type="button" class="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-all border border-zinc-700" data-i18n="btnCheckUpdate">
-          Güncellemeleri Kontrol Et
-        </button>
-        <div id="updateStatusContainer" class="mt-2 hidden"></div>
       </div>
     </div>
   </div>
@@ -201,16 +195,16 @@
   <div id="feedbackModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h3 class="text-sm font-semibold text-zinc-200" data-i18n="feedbackTitle">Geri Bildirim Gönder</h3>
+        <h3 class="text-sm font-semibold text-zinc-200" data-i18n="feedbackTitle">Send Feedback</h3>
         <button id="closeFeedbackBtn" class="text-zinc-500 hover:text-zinc-300 transition-colors">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <form id="feedbackForm" class="flex flex-col gap-3">
-        <input type="email" id="feedbackEmail" placeholder="E-posta Adresiniz (isteğe bağlı)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
-        <textarea id="feedbackMessage" required rows="4" placeholder="Görüş, öneri veya karşılaştığınız hatayı yazın..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50 resize-none"></textarea>
+        <input type="email" id="feedbackEmail" placeholder="Your Email (optional)" data-i18n-ph="phFeedbackEmail" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+        <textarea id="feedbackMessage" required rows="4" placeholder="Write your thoughts or issues..." data-i18n-ph="phFeedbackMessage" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50 resize-none"></textarea>
         <button id="sendFeedbackBtn" type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-lg shadow-rose-600/20" data-i18n="btnSendFeedback">
-          Gönder
+          Send
         </button>
       </form>
     </div>

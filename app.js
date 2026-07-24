@@ -1,767 +1,456 @@
-if (typeof nw !== 'undefined') {
-  try {
-    const win = nw.Window.get();
-    win.setIcon('icon.png');
-  } catch(e) {}
-}
+/**
+ * EXIF-B-Gone Engine v1.5.0
+ * Full Feature Preservation & Bilingual Support
+ */
 
-let queue = [];
-let selectedIndex = null;
-const CURRENT_VERSION = "1.5.0";
-const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
+document.addEventListener('DOMContentLoaded', () => {
 
-const NON_REMOVABLE_KEYS = [
-  'orientation', 'xresolution', 'yresolution', 'resolutionunit',
-  'colorspace', 'exifimagewidth', 'exifimageheight', 'imagewidth',
-  'imageheight', 'width', 'height', 'compression', 'photometricinterpretation',
-  'thumbnail', 'thumbnailbytecount', 'thumbnailoffset', 'jfifversion',
-  'thumbnailwidth', 'thumbnailheight', 'profileversion', 'profileclass',
-  'colorspacedata', 'profileconnectionspace', 'profilefilesignature',
-  'renderingintent', 'profiledescription', 'profilecopyright',
-  'profilecmmtype', 'primaryplatform', 'devicemanufacturer', 'profilecreator'
-];
+  // Global App State
+  let queue = [];
+  let selectedIndex = -1;
+  let currentRotation = 0;
+  let currentFlip = false;
+  let currentScale = 1;
+  let currentLang = localStorage.getItem('app_lang') || 'en';
 
-const i18n = {
-  tr: {
-    subtitle: "Fotoğraf ve Videolarınızın izlerini sıfırlayın.",
-    btnFeedback: "Geri Bildirim",
-    dragTitle: "Fotoğraf veya Videolarınızı buraya bırakın",
-    dragSub: "Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.",
-    queueTitle: "İşlem Kuyruğu",
-    btnClear: "Temizle",
-    emptyState: "Kuyrukta dosya yok.",
-    btnProcess: "Temizle & İndir",
-    btnZip: "ZIP İndir",
-    inspectorTitle: "Gizlilik Analizi",
-    inspectorEmpty: "Dosya seçerek içeride kalan gizli verileri kontrol edin.",
-    settingsTitle: "Ayarlar",
-    langLabel: "Uygulama Dili",
-    updateLabel: "Güncelleme Durumu",
-    btnCheckUpdate: "Güncellemeleri Kontrol Et",
-    feedbackTitle: "Geri Bildirim Gönder",
-    btnSendFeedback: "Gönder",
-    outFormat: "Çıktı Formatı",
-    resizeMax: "Boyut (Genişlik x Yükseklik)",
-    qualityLabel: "Kalite"
-  },
-  en: {
-    subtitle: "Strip unwanted metadata from your photos & videos.",
-    btnFeedback: "Feedback",
-    dragTitle: "Drop your photos or videos here or click to browse",
-    dragSub: "All files processed locally on your RAM, zero cloud upload.",
-    queueTitle: "Queue",
-    btnClear: "Clear",
-    emptyState: "No files in queue.",
-    btnProcess: "Clean & Download",
-    btnZip: "Download ZIP",
-    inspectorTitle: "Privacy Inspector",
-    inspectorEmpty: "Select a file to inspect embedded metadata.",
-    settingsTitle: "Settings",
-    langLabel: "App Language",
-    updateLabel: "Update Status",
-    btnCheckUpdate: "Check for Updates",
-    feedbackTitle: "Send Feedback",
-    btnSendFeedback: "Submit",
-    outFormat: "Export Format",
-    resizeMax: "Size (Width x Height)",
-    qualityLabel: "Quality"
-  }
-};
-
-let currentLang = localStorage.getItem('appLang') || 'tr';
-setLanguage(currentLang);
-
-function setLanguage(lang) {
-  currentLang = lang;
-  localStorage.setItem('appLang', lang);
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (i18n[lang] && i18n[lang][key]) {
-      el.textContent = i18n[lang][key];
+  // Complete i18n Translation Dictionary
+  const i18n = {
+    en: {
+      subtitle: "Strip unwanted metadata from your photos & videos.",
+      btnFeedback: "Feedback",
+      dragTitle: "Drop your photos or videos here or click to browse",
+      dragSub: "All files processed locally on your RAM, zero cloud upload.",
+      outFormat: "Export Format",
+      optOriginal: "Original Format (Default)",
+      resizeMax: "Size (Width x Height)",
+      phWidth: "Width (px)",
+      phHeight: "Height (px)",
+      qualityLabel: "Quality",
+      lblTransform: "Rotate / Flip:",
+      btnRotateLeft: "Left",
+      btnRotateRight: "Right",
+      btnFlipH: "Flip",
+      btnResetScale: "Reset",
+      queueTitle: "Queue",
+      btnClear: "Clear",
+      emptyState: "No files in queue.",
+      btnProcess: "Clean & Download",
+      btnZip: "Download ZIP",
+      inspectorTitle: "Privacy Inspector",
+      inspectorEmpty: "Select a file to inspect embedded metadata.",
+      inspectorClean: "Image is clean. No sensitive EXIF/GPS data.",
+      footerText: "EXIF-B-Gone • Open Source Privacy Tool",
+      settingsTitle: "Settings",
+      langLabel: "App Language",
+      feedbackTitle: "Send Feedback",
+      phFeedbackEmail: "Your Email (optional)",
+      phFeedbackMessage: "Write your thoughts or issues...",
+      btnSendFeedback: "Send",
+      // Metadata Details
+      vidAtom: "Container Atom",
+      vidAtomDesc: "NXXV Atom Found",
+      vidCreation: "Creation/Modify Info",
+      vidCreationDesc: "Present (GPS / Device / Date)",
+      vidLocation: "GPS/Device Location",
+      vidLocationDesc: "Parsed Protection Context",
+      vidFormat: "Format",
+      vidSize: "Size",
+      tagCamera: "Camera / Device",
+      tagSoftware: "Software",
+      tagDateTime: "Date & Time",
+      tagGPS: "GPS Coordinates"
+    },
+    tr: {
+      subtitle: "Fotoğraf ve Videolarınızın izlerini sıfırlayın.",
+      btnFeedback: "Geri Bildirim",
+      dragTitle: "Fotoğraf veya Videolarınızı buraya bırakın",
+      dragSub: "Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.",
+      outFormat: "Çıktı Formatı",
+      optOriginal: "Orijinal Format (Varsayılan)",
+      resizeMax: "Boyut (Genişlik x Yükseklik)",
+      phWidth: "Gen (px)",
+      phHeight: "Yük (px)",
+      qualityLabel: "Kalite",
+      lblTransform: "Döndür / Çevir:",
+      btnRotateLeft: "Sola",
+      btnRotateRight: "Sağa",
+      btnFlipH: "Aynala",
+      btnResetScale: "Sıfırla",
+      queueTitle: "İşlem Kuyruğu",
+      btnClear: "Temizle",
+      emptyState: "Kuyrukta dosya yok.",
+      btnProcess: "Temizle & İndir",
+      btnZip: "ZIP İndir",
+      inspectorTitle: "Gizlilik Analizi",
+      inspectorEmpty: "Dosya seçerek içeride kalan gizli verileri kontrol edin.",
+      inspectorClean: "Görsel temiz. Hassas EXIF/GPS verisi yok.",
+      footerText: "EXIF-B-Gone • Açık Kaynaklı Gizlilik Aracı",
+      settingsTitle: "Ayarlar",
+      langLabel: "Uygulama Dili",
+      feedbackTitle: "Geri Bildirim Gönder",
+      phFeedbackEmail: "E-posta Adresiniz (isteğe bağlı)",
+      phFeedbackMessage: "Görüş, öneri veya karşılaştığınız hatayı yazın...",
+      btnSendFeedback: "Gönder",
+      // Metadata Details
+      vidAtom: "Konteyner Atomu",
+      vidAtomDesc: "NXXV Atomu Mevcut",
+      vidCreation: "Oluşturma/Güncelleme",
+      vidCreationDesc: "Mevcut (GPS / Cihaz / Tarih)",
+      vidLocation: "GPS/Cihaz Konumu",
+      vidLocationDesc: "Ayrıştırılmış Konum Bağlamı",
+      vidFormat: "Format",
+      vidSize: "Boyut",
+      tagCamera: "Kamera / Cihaz",
+      tagSoftware: "Yazılım",
+      tagDateTime: "Tarih ve Saat",
+      tagGPS: "GPS Koordinatları"
     }
-  });
-  const langSelect = document.getElementById('langSelect');
-  if (langSelect) langSelect.value = lang;
-}
+  };
 
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-
-if (dropzone && fileInput) {
-  dropzone.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(Array.from(e.target.files));
-      fileInput.value = '';
-    }
-  });
-
-  dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropzone.classList.add('border-rose-500/50');
-  });
-
-  dropzone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropzone.classList.remove('border-rose-500/50');
-  });
-
-  dropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropzone.classList.remove('border-rose-500/50');
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(Array.from(e.dataTransfer.files));
-    }
-  });
-}
-
-async function parseVideoMetadata(file) {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let hasUserData = false;
-
-  for (let i = 0; i < bytes.length - 4; i++) {
-    const atom = String.fromCharCode(bytes[i], bytes[i+1], bytes[i+2], bytes[i+3]);
-    if (atom === 'udta' || atom === 'meta' || atom === 'ilst' || atom === 'uuid') {
-      let isZeroed = true;
-      for (let j = i + 4; j < i + 32 && j < bytes.length; j++) {
-        if (bytes[j] !== 0) {
-          isZeroed = false;
-          break;
-        }
-      }
-      if (!isZeroed) {
-        hasUserData = true;
-        break;
-      }
-    }
-  }
-
-  if (hasUserData) {
-    return {
-      'Container Atom': "MOOV / UDTA / META",
-      'Creation/Modify Info': "Mevcut (GPS / Cihaz / Tarih etiketi barındırıyor)",
-      'GPS/Device Location': "Ayrıştırılmış Konum Bağlamı Tespit Edildi",
-      'Format': file.type || 'video/mp4',
-      'Boyut': (file.size / (1024 * 1024)).toFixed(2) + ' MB'
-    };
-  }
-  return null;
-}
-
-async function stripVideoMetadata(file) {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const targetAtoms = ['udta', 'meta', 'ilst', 'uuid', 'XMP_'];
-
-  for (let i = 0; i < bytes.length - 4; i++) {
-    const tag = String.fromCharCode(bytes[i], bytes[i+1], bytes[i+2], bytes[i+3]);
-    if (targetAtoms.includes(tag)) {
-      const clearLength = Math.min(256, bytes.length - (i + 4));
-      for (let j = i + 4; j < i + 4 + clearLength; j++) {
-        bytes[j] = 0;
-      }
-    }
-  }
-
-  return new Blob([bytes], { type: file.type || 'video/mp4' });
-}
-
-async function handleFiles(files) {
-  const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'tiff', 'tif', 'avif', 'bmp', 'mp4', 'mov', 'webm', 'm4v'];
-  
-  const newFiles = files.filter(f => {
-    const ext = f.name.split('.').pop().toLowerCase();
-    return validExtensions.includes(ext);
-  });
-  
-  for (const file of newFiles) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    const isVideo = ['mp4', 'mov', 'webm', 'm4v'].includes(ext) || file.type.startsWith('video/');
-    let exifData = null;
-
-    if (isVideo) {
-      exifData = await parseVideoMetadata(file);
-    } else {
-      try {
-        exifData = await exifr.parse(file, {
-          tiff: true, xmp: true, iptc: true, icc: true, jfif: true, thumbnail: true
-        });
-      } catch (err) {}
-    }
-    
-    queue.push({
-      file: file,
-      name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      exif: exifData,
-      isVideo: isVideo,
-      rotation: 0,
-      flipH: false,
-      previewUrl: null,
-      convertedBlob: null,
-      naturalWidth: 0,
-      naturalHeight: 0
-    });
-  }
-  
-  if (queue.length > 0 && selectedIndex === null) {
-    selectedIndex = 0;
-  }
-  
-  updateUI();
-  if (selectedIndex !== null) selectFile(selectedIndex);
-}
-
-function updateFormatDropdown(isVideo) {
-  const exportFormatSelect = document.getElementById('exportFormat');
-  if (!exportFormatSelect) return;
-
-  if (isVideo) {
-    exportFormatSelect.innerHTML = `
-      <option value="original">Orijinal Format (Varsayılan)</option>
-      <option value="video/mp4">MP4 (.mp4)</option>
-      <option value="video/webm">WebM (.webm)</option>
-      <option value="video/quicktime">MOV (.mov)</option>
-    `;
-  } else {
-    exportFormatSelect.innerHTML = `
-      <option value="original">Orijinal Format (Varsayılan)</option>
-      <option value="image/jpeg">JPEG (.jpg)</option>
-      <option value="image/png">PNG (.png)</option>
-      <option value="image/webp">WebP (.webp)</option>
-      <option value="image/avif">AVIF (.avif)</option>
-      <option value="image/bmp">BMP (.bmp)</option>
-    `;
-  }
-}
-
-function updateUI() {
+  // DOM Selectors
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
   const fileList = document.getElementById('fileList');
   const emptyState = document.getElementById('emptyState');
   const fileCount = document.getElementById('fileCount');
   const processBtn = document.getElementById('processBtn');
   const zipBtn = document.getElementById('zipBtn');
-
-  if (fileCount) fileCount.textContent = queue.length;
-  if (!fileList) return;
-
-  if (queue.length === 0) {
-    fileList.innerHTML = '';
-    if (emptyState) {
-      emptyState.classList.remove('hidden');
-      fileList.appendChild(emptyState);
-    }
-    if (processBtn) {
-      processBtn.disabled = true;
-      processBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50";
-    }
-    if (zipBtn) {
-      zipBtn.disabled = true;
-      zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50";
-    }
-    resetInspector();
-    return;
-  }
-
-  if (emptyState) emptyState.classList.add('hidden');
-  fileList.innerHTML = '';
-
-  if (processBtn) {
-    processBtn.disabled = false;
-    processBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
-  }
-  if (zipBtn) {
-    zipBtn.disabled = false;
-    zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-800 hover:bg-zinc-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-zinc-700";
-  }
-
-  queue.forEach((item, index) => {
-    const div = document.createElement('div');
-    const isSelected = selectedIndex === index;
-    div.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-zinc-900 border-rose-500/50' : 'bg-black/40 border-zinc-800/50 hover:border-zinc-700'}`;
-    
-    const iconClass = item.isVideo ? 'fa-video text-rose-400' : 'fa-image text-zinc-500';
-
-    div.innerHTML = `
-      <div class="flex items-center gap-3 truncate pointer-events-none">
-        <i class="fa-regular ${iconClass}"></i>
-        <div class="truncate">
-          <p class="text-xs font-medium text-zinc-200 truncate">${item.name}</p>
-          <p class="text-[10px] text-zinc-500">${item.size}</p>
-        </div>
-      </div>
-      <button type="button" class="delete-single-btn p-1.5 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer">
-        <i class="fa-solid fa-xmark text-xs pointer-events-none"></i>
-      </button>
-    `;
-
-    div.addEventListener('click', (e) => {
-      if (!e.target.closest('.delete-single-btn')) selectFile(index);
-    });
-
-    const delBtn = div.querySelector('.delete-single-btn');
-    delBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      removeItemByIndex(index);
-    });
-
-    fileList.appendChild(div);
-  });
-}
-
-function removeItemByIndex(index) {
-  if (queue[index] && queue[index].previewUrl) {
-    URL.revokeObjectURL(queue[index].previewUrl);
-  }
-  queue.splice(index, 1);
+  const clearAllBtn = document.getElementById('clearAllBtn');
   
-  if (queue.length === 0) {
-    selectedIndex = null;
-  } else if (selectedIndex >= queue.length) {
-    selectedIndex = queue.length - 1;
-  }
-  
-  updateUI();
-  if (selectedIndex !== null && queue[selectedIndex]) {
-    selectFile(selectedIndex);
-  } else {
-    resetInspector();
-  }
-}
+  const exportFormat = document.getElementById('exportFormat');
+  const maxWidthInput = document.getElementById('maxWidthInput');
+  const maxHeightInput = document.getElementById('maxHeightInput');
+  const qualityRange = document.getElementById('qualityRange');
+  const qualityVal = document.getElementById('qualityVal');
 
-function updatePreviewTransform() {
-  if (selectedIndex === null || !queue[selectedIndex]) return;
-
-  const item = queue[selectedIndex];
-  const scaleX = item.flipH ? -1 : 1;
-  const transformStyle = `rotate(${item.rotation}deg) scaleX(${scaleX})`;
-
-  const previewImg = document.getElementById('imagePreview');
-  const previewVideo = document.getElementById('videoPreview');
-
-  if (item.isVideo && previewVideo) {
-    previewVideo.style.transform = transformStyle;
-    previewVideo.style.transition = 'transform 0.3s ease';
-  } else if (previewImg) {
-    previewImg.style.transform = transformStyle;
-    previewImg.style.transition = 'transform 0.3s ease';
-  }
-}
-
-async function selectFile(index) {
-  if (index < 0 || index >= queue.length) return;
-  selectedIndex = index;
-  const item = queue[index];
-
-  updateFormatDropdown(item.isVideo);
-
-  const fileNameEl = document.getElementById('selectedFileName');
-  if (fileNameEl) fileNameEl.textContent = item.name;
+  const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+  const rotateRightBtn = document.getElementById('rotateRightBtn');
+  const flipHBtn = document.getElementById('flipHBtn');
+  const scale50Btn = document.getElementById('scale50Btn');
+  const scale75Btn = document.getElementById('scale75Btn');
+  const resetScaleBtn = document.getElementById('resetScaleBtn');
 
   const previewContainer = document.getElementById('previewContainer');
-  const previewImg = document.getElementById('imagePreview');
-  const previewVideo = document.getElementById('videoPreview');
-
-  if (previewContainer) previewContainer.classList.remove('hidden');
-
-  if (!item.previewUrl) {
-    if (item.isVideo) {
-      item.previewUrl = URL.createObjectURL(item.file);
-    } else {
-      const sourceBlob = await getImageSourceBlob(item);
-      item.previewUrl = URL.createObjectURL(sourceBlob);
-    }
-  }
-
-  if (item.isVideo) {
-    if (previewImg) previewImg.classList.add('hidden');
-    if (previewVideo) {
-      previewVideo.classList.remove('hidden');
-      previewVideo.src = item.previewUrl;
-      previewVideo.load();
-    }
-  } else {
-    if (previewVideo) {
-      previewVideo.pause();
-      previewVideo.classList.add('hidden');
-    }
-    if (previewImg) {
-      previewImg.classList.remove('hidden');
-      previewImg.src = item.previewUrl;
-      previewImg.onload = () => {
-        item.naturalWidth = previewImg.naturalWidth;
-        item.naturalHeight = previewImg.naturalHeight;
-      };
-    }
-  }
-
-  updatePreviewTransform();
-  renderInspectorData(item);
-  updateUI();
-}
-
-function renderInspectorData(item) {
+  const imagePreview = document.getElementById('imagePreview');
+  const videoPreview = document.getElementById('videoPreview');
   const exifInspector = document.getElementById('exifInspector');
-  if (!exifInspector) return;
+  const selectedFileName = document.getElementById('selectedFileName');
 
-  if (!item.exif || Object.keys(item.exif).length === 0) {
-    exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Dosyada hiçbir gizli veri bulunamadı!' : 'No sensitive metadata found!'}</span></div>`;
-  } else {
-    let filteredEntries = [];
-    for (const [key, val] of Object.entries(item.exif)) {
-      if (typeof val !== 'object' && val !== undefined) {
-        if (!NON_REMOVABLE_KEYS.includes(key.toLowerCase())) {
-          filteredEntries.push([key, val]);
+  const settingsModal = document.getElementById('settingsModal');
+  const feedbackModal = document.getElementById('feedbackModal');
+  const langSelect = document.getElementById('langSelect');
+
+  // Apply Language Strings
+  function applyLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('app_lang', lang);
+    const dict = i18n[lang] || i18n.en;
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (dict[key]) el.textContent = dict[key];
+    });
+
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const key = el.getAttribute('data-i18n-ph');
+      if (dict[key]) el.placeholder = dict[key];
+    });
+
+    if (langSelect) langSelect.value = lang;
+
+    if (selectedIndex >= 0 && queue[selectedIndex]) {
+      renderInspector(queue[selectedIndex]);
+    }
+  }
+
+  // Quality Input Event
+  qualityRange?.addEventListener('input', (e) => {
+    if (qualityVal) qualityVal.textContent = `${Math.round(e.target.value * 100)}%`;
+  });
+
+  // Modal Toggles
+  document.getElementById('openSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
+  document.getElementById('closeSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
+  document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
+  document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
+
+  langSelect?.addEventListener('change', (e) => applyLanguage(e.target.value));
+
+  // File Upload Handlers
+  dropzone?.addEventListener('click', () => fileInput.click());
+  dropzone?.addEventListener('dragover', (e) => e.preventDefault());
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+  fileInput?.addEventListener('change', (e) => {
+    if (e.target.files.length) handleFiles(e.target.files);
+  });
+
+  function handleFiles(files) {
+    Array.from(files).forEach(file => {
+      const isVideo = file.type.startsWith('video') || file.name.match(/\.(mp4|mov|avi|mkv|webm)$/i);
+      queue.push({
+        file,
+        id: Math.random().toString(36).substring(2, 9),
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        type: isVideo ? 'video' : 'image',
+        exifData: null
+      });
+    });
+    updateQueueUI();
+    if (selectedIndex === -1 && queue.length > 0) selectItem(0);
+  }
+
+  function updateQueueUI() {
+    fileCount.textContent = queue.length;
+    if (queue.length === 0) {
+      emptyState.classList.remove('hidden');
+      fileList.innerHTML = '';
+      fileList.appendChild(emptyState);
+      processBtn.disabled = true;
+      zipBtn.disabled = true;
+      processBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50';
+      zipBtn.className = 'py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50';
+      resetPreview();
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+    fileList.innerHTML = '';
+    
+    processBtn.disabled = false;
+    zipBtn.disabled = false;
+    processBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-rose-600 text-white hover:bg-rose-500 cursor-pointer transition-all shadow-lg shadow-rose-600/20';
+    zipBtn.className = 'py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-800 text-zinc-200 hover:bg-zinc-700 cursor-pointer transition-all border border-zinc-700';
+
+    queue.forEach((item, idx) => {
+      const el = document.createElement('div');
+      const isSelected = idx === selectedIndex;
+      el.className = `p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+        isSelected ? 'bg-zinc-800/90 border-rose-500/50' : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
+      }`;
+      
+      el.innerHTML = `
+        <div class="flex items-center gap-3 overflow-hidden">
+          <i class="fa-regular ${item.type === 'video' ? 'fa-file-video text-rose-400' : 'fa-file-image text-zinc-400'} text-sm"></i>
+          <div class="truncate">
+            <p class="text-xs font-medium text-zinc-200 truncate">${item.name}</p>
+            <p class="text-[10px] text-zinc-500">${item.size}</p>
+          </div>
+        </div>
+        <button class="remove-btn text-zinc-600 hover:text-rose-400 p-1 transition-colors">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      `;
+
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-btn')) {
+          e.stopPropagation();
+          queue.splice(idx, 1);
+          if (selectedIndex >= queue.length) selectedIndex = queue.length - 1;
+          updateQueueUI();
+          if (selectedIndex >= 0) selectItem(selectedIndex);
+        } else {
+          selectItem(idx);
+        }
+      });
+
+      fileList.appendChild(el);
+    });
+  }
+
+  async function selectItem(index) {
+    selectedIndex = index;
+    updateQueueUI();
+    const item = queue[index];
+    if (!item) return;
+
+    selectedFileName.textContent = item.name;
+    previewContainer.classList.remove('hidden');
+
+    const url = URL.createObjectURL(item.file);
+
+    if (item.type === 'video') {
+      imagePreview.classList.add('hidden');
+      videoPreview.classList.remove('hidden');
+      videoPreview.src = url;
+    } else {
+      videoPreview.classList.add('hidden');
+      imagePreview.classList.remove('hidden');
+      imagePreview.src = url;
+      if (typeof exifr !== 'undefined' && !item.exifData) {
+        try {
+          item.exifData = await exifr.parse(item.file);
+        } catch (err) {
+          item.exifData = null;
         }
       }
     }
 
-    if (filteredEntries.length === 0) {
-      exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Dosya temiz. Hassas veri yok.' : 'File is clean. No sensitive metadata.'}</span></div>`;
-    } else {
-      let html = '<div class="flex flex-col gap-1.5 w-full">';
-      for (const [key, val] of filteredEntries) {
-        html += `
-          <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
-            <span class="text-zinc-400 font-medium">${key}</span>
-            <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${val}</span>
+    renderInspector(item);
+  }
+
+  function renderInspector(item) {
+    const dict = i18n[currentLang] || i18n.en;
+    
+    if (item.type === 'video') {
+      exifInspector.innerHTML = `
+        <div class="flex flex-col gap-2">
+          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">${dict.vidAtom}</span>
+            <span class="text-rose-400 font-mono text-[11px]">${dict.vidAtomDesc}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">${dict.vidCreation}</span>
+            <span class="text-rose-400 font-mono text-[11px]">${dict.vidCreationDesc}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">${dict.vidLocation}</span>
+            <span class="text-rose-400 font-mono text-[11px]">${dict.vidLocationDesc}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">${dict.vidFormat}</span>
+            <span class="text-zinc-200 font-mono text-[11px]">${item.file.type || 'video/mp4'}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium">${dict.vidSize}</span>
+            <span class="text-zinc-200 font-mono text-[11px]">${item.size}</span>
+          </div>
+        </div>
+      `;
+    } else if (item.exifData && Object.keys(item.exifData).length > 0) {
+      let rows = '';
+      for (const [key, val] of Object.entries(item.exifData)) {
+        rows += `
+          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
+            <span class="text-zinc-400 font-medium truncate max-w-[140px]">${key}</span>
+            <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${String(val)}</span>
           </div>
         `;
       }
-      html += '</div>';
-      exifInspector.innerHTML = html;
+      exifInspector.innerHTML = `<div class="flex flex-col gap-2">${rows}</div>`;
+    } else {
+      exifInspector.innerHTML = `
+        <div class="text-center py-10 flex flex-col items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <i class="fa-solid fa-check text-sm"></i>
+          </div>
+          <p class="text-xs text-emerald-400 font-medium">${dict.inspectorClean}</p>
+        </div>
+      `;
     }
   }
-}
 
-document.getElementById('rotateLeftBtn')?.addEventListener('click', () => {
-  if (selectedIndex !== null && queue[selectedIndex]) {
-    queue[selectedIndex].rotation -= 90;
-    updatePreviewTransform();
+  function resetPreview() {
+    previewContainer.classList.add('hidden');
+    selectedFileName.textContent = '';
+    const dict = i18n[currentLang] || i18n.en;
+    exifInspector.innerHTML = `<div class="text-center py-12 text-zinc-600 text-xs leading-relaxed">${dict.inspectorEmpty}</div>`;
   }
-});
 
-document.getElementById('rotateRightBtn')?.addEventListener('click', () => {
-  if (selectedIndex !== null && queue[selectedIndex]) {
-    queue[selectedIndex].rotation += 90;
-    updatePreviewTransform();
+  // Transform Handlers
+  function updateTransforms() {
+    const transformStr = `rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1}) scale(${currentScale})`;
+    imagePreview.style.transform = transformStr;
+    videoPreview.style.transform = transformStr;
   }
-});
 
-document.getElementById('flipHBtn')?.addEventListener('click', () => {
-  if (selectedIndex !== null && queue[selectedIndex]) {
-    queue[selectedIndex].flipH = !queue[selectedIndex].flipH;
-    updatePreviewTransform();
-  }
-});
+  rotateLeftBtn?.addEventListener('click', () => { currentRotation -= 90; updateTransforms(); });
+  rotateRightBtn?.addEventListener('click', () => { currentRotation += 90; updateTransforms(); });
+  flipHBtn?.addEventListener('click', () => { currentFlip = !currentFlip; updateTransforms(); });
+  scale50Btn?.addEventListener('click', () => { currentScale = 0.5; updateTransforms(); });
+  scale75Btn?.addEventListener('click', () => { currentScale = 0.75; updateTransforms(); });
+  resetScaleBtn?.addEventListener('click', () => { currentRotation = 0; currentFlip = false; currentScale = 1; updateTransforms(); });
 
-document.getElementById('scale50Btn')?.addEventListener('click', () => setPercentScale(0.5));
-document.getElementById('scale75Btn')?.addEventListener('click', () => setPercentScale(0.75));
-document.getElementById('resetScaleBtn')?.addEventListener('click', resetScale);
-
-function setPercentScale(factor) {
-  if (selectedIndex === null || !queue[selectedIndex]) return;
-  const item = queue[selectedIndex];
-  if (item.naturalWidth && item.naturalHeight) {
-    document.getElementById('maxWidthInput').value = Math.round(item.naturalWidth * factor);
-    document.getElementById('maxHeightInput').value = Math.round(item.naturalHeight * factor);
-  }
-}
-
-function resetScale() {
-  document.getElementById('maxWidthInput').value = '';
-  document.getElementById('maxHeightInput').value = '';
-}
-
-document.getElementById('qualityRange')?.addEventListener('input', (e) => {
-  const qualityVal = document.getElementById('qualityVal');
-  if (qualityVal) qualityVal.textContent = Math.round(e.target.value * 100) + '%';
-});
-
-document.getElementById('clearAllBtn')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  queue.forEach(item => {
-    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  clearAllBtn?.addEventListener('click', () => {
+    queue = [];
+    selectedIndex = -1;
+    updateQueueUI();
   });
-  queue = [];
-  selectedIndex = null;
-  updateUI();
-});
 
-function resetInspector() {
-  const fileNameEl = document.getElementById('selectedFileName');
-  if (fileNameEl) fileNameEl.textContent = '';
-  
-  const previewContainer = document.getElementById('previewContainer');
-  if (previewContainer) previewContainer.classList.add('hidden');
-  
-  const exifInspector = document.getElementById('exifInspector');
-  if (exifInspector) {
-    exifInspector.innerHTML = `<div class="text-center py-12 text-zinc-600 text-xs leading-relaxed">${i18n[currentLang].inspectorEmpty}</div>`;
-  }
-}
-
-function triggerDownload(blob, fileName) {
-  try {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 1000);
-  } catch (e) {
-    console.error("İndirme hatası:", e);
-  }
-}
-
-async function getImageSourceBlob(item) {
-  const ext = item.name.split('.').pop().toLowerCase();
-  
-  if (ext === 'heic' || ext === 'heif' || item.file.type === 'image/heic' || item.file.type === 'image/heif') {
-    if (item.convertedBlob) {
-      return item.convertedBlob;
-    }
-    if (typeof heic2any !== 'undefined') {
-      try {
-        const converted = await heic2any({
-          blob: item.file,
-          toType: "image/jpeg",
-          quality: 0.95
-        });
-        const finalBlob = Array.isArray(converted) ? converted[0] : converted;
-        item.convertedBlob = finalBlob;
-        return finalBlob;
-      } catch (e) {
-        console.error("HEIC dönüşüm hatası:", e);
-      }
-    }
-  }
-  return item.file;
-}
-
-async function processMedia(item) {
-  if (item.isVideo) {
-    const cleanedBlob = await stripVideoMetadata(item.file);
-    return { blob: cleanedBlob, name: item.name };
-  }
-
-  const sourceBlob = await getImageSourceBlob(item);
-  
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    
-    img.onload = () => {
-      try {
+  // Processing Core (Canvas Clean & Download)
+  async function processImage(item) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
         const canvas = document.createElement('canvas');
-        let origW = img.naturalWidth || img.width;
-        let origH = img.naturalHeight || img.height;
+        let width = img.width;
+        let height = img.height;
 
-        const rot = Math.abs(item.rotation % 360);
-        const is90 = rot === 90 || rot === 270;
+        const maxW = parseInt(maxWidthInput?.value) || 0;
+        const maxH = parseInt(maxHeightInput?.value) || 0;
 
-        let renderW = is90 ? origH : origW;
-        let renderH = is90 ? origW : origH;
-
-        const customW = parseInt(document.getElementById('maxWidthInput')?.value);
-        const customH = parseInt(document.getElementById('maxHeightInput')?.value);
-
-        if (customW && customH) {
-          renderW = customW;
-          renderH = customH;
-        } else if (customW) {
-          renderH = Math.round((renderH * customW) / renderW);
-          renderW = customW;
-        } else if (customH) {
-          renderW = Math.round((renderW * customH) / renderH);
-          renderH = customH;
+        if (maxW > 0 && width > maxW) {
+          height = Math.round((height * maxW) / width);
+          width = maxW;
+        }
+        if (maxH > 0 && height > maxH) {
+          width = Math.round((width * maxH) / height);
+          height = maxH;
         }
 
-        canvas.width = renderW;
-        canvas.height = renderH;
-
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
-        const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
-        
-        let targetMime = 'image/jpeg';
-        const isHeic = item.name.toLowerCase().endsWith('.heic') || item.name.toLowerCase().endsWith('.heif');
-        
-        if (exportFormatSelect === 'original') {
-          if (item.file.type && !isHeic) {
-            targetMime = item.file.type;
-          }
+
+        if (currentRotation !== 0 || currentFlip) {
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          if (currentRotation) ctx.rotate((currentRotation * Math.PI) / 180);
+          if (currentFlip) ctx.scale(-1, 1);
+          ctx.drawImage(img, -width / 2, -height / 2, width, height);
         } else {
-          targetMime = exportFormatSelect;
+          ctx.drawImage(img, 0, 0, width, height);
         }
 
-        const quality = parseFloat(document.getElementById('qualityRange')?.value || 0.9);
-
-        if (targetMime === 'image/jpeg' || targetMime === 'image/bmp') {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate((item.rotation * Math.PI) / 180);
-        if (item.flipH) ctx.scale(-1, 1);
-
-        const drawW = is90 ? canvas.height : canvas.width;
-        const drawH = is90 ? canvas.width : canvas.height;
-        
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-
-        let newName = item.name;
-        const nameWithoutExt = newName.substring(0, newName.lastIndexOf('.')) || newName;
-
-        const extMap = {
-          'image/jpeg': '.jpg',
-          'image/png': '.png',
-          'image/webp': '.webp',
-          'image/avif': '.avif',
-          'image/bmp': '.bmp'
-        };
-        if (extMap[targetMime]) newName = nameWithoutExt + extMap[targetMime];
-
+        const quality = parseFloat(qualityRange?.value) || 0.9;
         canvas.toBlob((blob) => {
-          if (blob) {
-            resolve({ blob, name: newName });
-          } else {
-            reject(new Error("Canvas toBlob failed"));
-          }
-        }, targetMime, quality);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    
-    img.onerror = (err) => reject(err);
-    img.src = URL.createObjectURL(sourceBlob);
-  });
-}
-
-document.getElementById('processBtn')?.addEventListener('click', async () => {
-  if (queue.length === 0) return;
-  for (const item of queue) {
-    try {
-      const processed = await processMedia(item);
-      triggerDownload(processed.blob, `cleaned_${processed.name}`);
-    } catch (e) {
-      alert(currentLang === 'tr' ? "Dosya işlenirken bir hata oluştu." : "Error processing file.");
-    }
-  }
-});
-
-document.getElementById('zipBtn')?.addEventListener('click', async () => {
-  if (queue.length === 0) return;
-  const zip = new JSZip();
-  for (const item of queue) {
-    try {
-      const processed = await processMedia(item);
-      zip.file(`cleaned_${processed.name}`, processed.blob);
-    } catch (e) {}
-  }
-  const content = await zip.generateAsync({ type: 'blob' });
-  triggerDownload(content, 'EXIF_Cleaned_Files.zip');
-});
-
-const settingsModal = document.getElementById('settingsModal');
-const feedbackModal = document.getElementById('feedbackModal');
-
-document.getElementById('openSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.remove('hidden'));
-document.getElementById('closeSettingsBtn')?.addEventListener('click', () => settingsModal?.classList.add('hidden'));
-
-document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
-document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
-
-document.getElementById('langSelect')?.addEventListener('change', (e) => setLanguage(e.target.value));
-
-document.getElementById('checkUpdateBtn')?.addEventListener('click', async () => {
-  const container = document.getElementById('updateStatusContainer');
-  if (!container) return;
-  container.classList.remove('hidden');
-  container.innerHTML = `<p class="text-[11px] text-zinc-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
-
-  try {
-    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
-    const data = await response.json();
-    const latestVersion = data.tag_name.replace('v', '');
-
-    if (latestVersion !== CURRENT_VERSION) {
-      const setupAsset = data.assets.find(a => a.name.endsWith('.exe'));
-      const downloadUrl = setupAsset ? setupAsset.browser_download_url : data.html_url;
-
-      container.innerHTML = currentLang === 'tr' 
-        ? `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all cursor-pointer">Sürüm ${data.tag_name} İndir ve Kur</button>`
-        : `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all cursor-pointer">Download & Install ${data.tag_name}</button>`;
-
-      document.getElementById('autoInstallBtn')?.addEventListener('click', async () => {
-        if (typeof nw !== 'undefined' && nw.Shell) {
-          nw.Shell.openExternal(downloadUrl);
-        } else {
-          window.location.href = downloadUrl;
-        }
-      });
-    } else {
-      container.innerHTML = `<p class="text-[11px] text-emerald-400 text-center">${currentLang === 'tr' ? 'Uygulamanız güncel! (v' + CURRENT_VERSION + ')' : 'App is up to date! (v' + CURRENT_VERSION + ')'}</p>`;
-    }
-  } catch (err) {
-    container.innerHTML = `<p class="text-[11px] text-rose-400 text-center">${currentLang === 'tr' ? 'Güncelleme kontrolü başarısız oldu.' : 'Failed to check for updates.'}</p>`;
-  }
-});
-
-document.getElementById('feedbackForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('feedbackEmail')?.value || 'no-reply@exifbgone.app';
-  const message = document.getElementById('feedbackMessage')?.value;
-  const sendBtn = document.getElementById('sendFeedbackBtn');
-
-  if (sendBtn) {
-    sendBtn.disabled = true;
-    sendBtn.textContent = currentLang === 'tr' ? 'Gönderiliyor...' : 'Sending...';
-  }
-
-  try {
-    const params = new URLSearchParams();
-    params.append('email', email);
-    params.append('message', message);
-
-    const response = await fetch(FORMSPREE_ENDPOINT, {
-      method: 'POST',
-      body: params,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
-      }
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      };
+      img.src = URL.createObjectURL(item.file);
     });
-
-    if (response.ok) {
-      alert(currentLang === 'tr' ? 'Geri bildiriminiz başarıyla iletildi!' : 'Feedback sent successfully!');
-      document.getElementById('feedbackForm').reset();
-      feedbackModal?.classList.add('hidden');
-    } else {
-      throw new Error('Formspree error');
-    }
-  } catch (error) {
-    if (typeof nw !== 'undefined' && nw.Shell) {
-      nw.Shell.openExternal(`mailto:support@exifbgone.app?subject=EXIF-B-Gone Feedback&body=${encodeURIComponent(message)}`);
-    }
-    alert(currentLang === 'tr' ? 'Geri bildirim iletilemedi. E-posta istemciniz açılıyor...' : 'Opening email client...');
-  } finally {
-    if (sendBtn) {
-      sendBtn.disabled = false;
-      sendBtn.textContent = i18n[currentLang].btnSendFeedback;
-    }
   }
+
+  // Process and Download Actions
+  processBtn?.addEventListener('click', async () => {
+    for (const item of queue) {
+      if (item.type === 'image') {
+        const blob = await processImage(item);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.jpg`;
+        a.click();
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(item.file);
+        a.download = `cleaned_${item.name}`;
+        a.click();
+      }
+    }
+  });
+
+  zipBtn?.addEventListener('click', async () => {
+    if (typeof JSZip === 'undefined') return;
+    const zip = new JSZip();
+
+    for (const item of queue) {
+      if (item.type === 'image') {
+        const blob = await processImage(item);
+        zip.file(`cleaned_${item.name.replace(/\.[^/.]+$/, '')}.jpg`, blob);
+      } else {
+        zip.file(`cleaned_${item.name}`, item.file);
+      }
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = 'EXIF-B-Gone_Cleaned.zip';
+    a.click();
+  });
+
+  // Init App Language
+  applyLanguage(currentLang);
 });
