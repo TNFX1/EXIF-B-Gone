@@ -11,27 +11,30 @@ const CURRENT_VERSION = "1.3.0";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
-// Silinemeyen / Görselin Kendisine Ait Olan Teknik Parametreler (Filtrelenecekler)
+// Canvas'ın yeniden oluştururken dosyaya zorunlu eklediği zararsız sistem ve renk profili parametreleri
 const NON_REMOVABLE_KEYS = [
   'orientation', 'xresolution', 'yresolution', 'resolutionunit',
   'colorspace', 'exifimagewidth', 'exifimageheight', 'imagewidth',
   'imageheight', 'width', 'height', 'compression', 'photometricinterpretation',
-  'thumbnail', 'thumbnailbytecount', 'thumbnailoffset'
+  'thumbnail', 'thumbnailbytecount', 'thumbnailoffset', 'jfifversion',
+  'thumbnailwidth', 'thumbnailheight', 'profileversion', 'profileclass',
+  'colorspacedata', 'profileconnectionspace', 'profilefilesignature',
+  'renderingintent', 'profiledescription', 'profilecopyright'
 ];
 
 const i18n = {
   tr: {
-    subtitle: "Gizlilik ve EXIF/XMP/IPTC Temizleme Asistanı",
+    subtitle: "Fotoğraflarınızın izlerini sıfırlayın.",
     btnFeedback: "Geri Bildirim",
-    dragTitle: "Fotoğraflarınızı buraya sürükleyin veya seçin",
-    dragSub: "JPG, PNG, WebP, HEIC, TIFF ve AVIF dosyaları doğrudan yerel bellekte işlenir.",
+    dragTitle: "Fotoğraflarınızı buraya bırakın veya göz atın",
+    dragSub: "Tüm dosyalar bilgisayarınızda yerel olarak işlenir, sunucuya aktarılmaz.",
     queueTitle: "İşlem Kuyruğu",
     btnClear: "Temizle",
-    emptyState: "Henüz fotoğraf eklenmedi.",
+    emptyState: "Kuyrukta fotoğraf yok.",
     btnProcess: "Temizle & İndir",
     btnZip: "ZIP İndir",
-    inspectorTitle: "Gizlilik Detayları",
-    inspectorEmpty: "Listeden bir fotoğrafa tıklayarak saklı verileri görüntüleyebilirsiniz.",
+    inspectorTitle: "Gizlilik Analizi",
+    inspectorEmpty: "Fotoğraf seçerek içeride kalan gizli verileri kontrol edin.",
     settingsTitle: "Ayarlar",
     langLabel: "Uygulama Dili",
     updateLabel: "Güncelleme Durumu",
@@ -41,30 +44,30 @@ const i18n = {
     btnSendFeedback: "Gönder",
     outFormat: "Çıktı Formatı",
     resizeMax: "Max Genişlik (px)",
-    qualityLabel: "Kalite (%)"
+    qualityLabel: "Kalite"
   },
   en: {
-    subtitle: "Privacy & EXIF/XMP/IPTC Metadata Scrubber",
+    subtitle: "Strip unwanted metadata from your photos.",
     btnFeedback: "Feedback",
-    dragTitle: "Drag & drop photos here or click to browse",
-    dragSub: "JPG, PNG, WebP, HEIC, TIFF, and AVIF processed strictly in local RAM.",
-    queueTitle: "Processing Queue",
+    dragTitle: "Drop your photos here or click to browse",
+    dragSub: "All files processed locally on your RAM, zero cloud upload.",
+    queueTitle: "Queue",
     btnClear: "Clear",
-    emptyState: "No photos added yet.",
+    emptyState: "No photos in queue.",
     btnProcess: "Clean & Download",
     btnZip: "Download ZIP",
     inspectorTitle: "Privacy Inspector",
-    inspectorEmpty: "Click a photo from the queue to view embedded metadata.",
+    inspectorEmpty: "Select a photo to inspect embedded metadata.",
     settingsTitle: "Settings",
     langLabel: "App Language",
     updateLabel: "Update Status",
     btnCheckUpdate: "Check for Updates",
     feedbackTitle: "Send Feedback",
-    feedbackSub: "Share your ideas, suggestions, or bug reports with us.",
+    feedbackSub: "Share your ideas or bug reports with us.",
     btnSendFeedback: "Submit",
     outFormat: "Export Format",
     resizeMax: "Max Width (px)",
-    qualityLabel: "Quality (%)"
+    qualityLabel: "Quality"
   }
 };
 
@@ -116,19 +119,19 @@ if (dropzone && fileInput) {
   dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    dropzone.classList.add('border-rose-500');
+    dropzone.classList.add('border-rose-500/50');
   });
 
   dropzone.addEventListener('dragleave', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    dropzone.classList.remove('border-rose-500');
+    dropzone.classList.remove('border-rose-500/50');
   });
 
   dropzone.addEventListener('drop', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    dropzone.classList.remove('border-rose-500');
+    dropzone.classList.remove('border-rose-500/50');
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(Array.from(e.dataTransfer.files));
     }
@@ -146,7 +149,6 @@ async function handleFiles(files) {
   for (const file of newFiles) {
     let exifData = null;
     try {
-      // EXIF, XMP, IPTC, ICC ve Thumbnail dâhil tüm segmentleri tara
       exifData = await exifr.parse(file, {
         tiff: true,
         xmp: true,
@@ -194,11 +196,11 @@ function updateUI() {
     }
     if (processBtn) {
       processBtn.disabled = true;
-      processBtn.className = "flex-1 py-2.5 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+      processBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-gray-900 text-gray-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-gray-800";
     }
     if (zipBtn) {
       zipBtn.disabled = true;
-      zipBtn.className = "py-2.5 px-4 rounded-2xl font-semibold text-xs bg-slate-900 text-slate-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-slate-800";
+      zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-gray-900 text-gray-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-gray-800";
     }
     resetInspector();
     return;
@@ -209,28 +211,28 @@ function updateUI() {
 
   if (processBtn) {
     processBtn.disabled = false;
-    processBtn.className = "flex-1 py-2.5 px-4 rounded-2xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
+    processBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-rose-600 hover:bg-rose-500 text-white cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20";
   }
   if (zipBtn) {
     zipBtn.disabled = false;
-    zipBtn.className = "py-2.5 px-4 rounded-2xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-slate-700";
+    zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-gray-800 hover:bg-gray-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-gray-700";
   }
 
   queue.forEach((item, index) => {
     const div = document.createElement('div');
     const isSelected = selectedIndex === index;
-    div.className = `p-2.5 rounded-2xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-slate-800/80 border-rose-500/50' : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'}`;
+    div.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-gray-900/90 border-rose-500/40' : 'bg-gray-950/60 border-gray-900 hover:border-gray-800'}`;
     
     div.innerHTML = `
       <div class="flex items-center gap-3 truncate pointer-events-none">
-        <i class="fa-regular fa-image text-slate-400"></i>
+        <i class="fa-regular fa-image text-gray-500"></i>
         <div class="truncate">
-          <p class="text-xs font-semibold text-slate-200 truncate">${item.name}</p>
-          <p class="text-[10px] text-slate-500">${item.size}</p>
+          <p class="text-xs font-medium text-gray-200 truncate">${item.name}</p>
+          <p class="text-[10px] text-gray-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" data-index="${index}" class="delete-single-btn p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer">
-        <i class="fa-solid fa-xmark text-sm pointer-events-none"></i>
+      <button type="button" data-index="${index}" class="delete-single-btn p-1.5 text-gray-500 hover:text-rose-400 transition-colors cursor-pointer">
+        <i class="fa-solid fa-xmark text-xs pointer-events-none"></i>
       </button>
     `;
 
@@ -285,7 +287,7 @@ function selectFile(index) {
   const exifInspector = document.getElementById('exifInspector');
   if (exifInspector) {
     if (!item.exif || Object.keys(item.exif).length === 0) {
-      exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Bu fotoğrafta temizlenecek gizli metadata (EXIF/XMP/IPTC) bulunamadı.' : 'No removable metadata (EXIF/XMP/IPTC) found in this image.'}</div>`;
+      exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Fotoğrafta hiçbir gizli veri (EXIF/GPS/XMP) yok, tamamen temiz!' : 'No sensitive metadata found in this photo, completely clean!'}</span></div>`;
     } else {
       let filteredEntries = [];
       for (const [key, val] of Object.entries(item.exif)) {
@@ -297,13 +299,13 @@ function selectFile(index) {
       }
 
       if (filteredEntries.length === 0) {
-        exifInspector.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">${currentLang === 'tr' ? 'Fotoğrafta temizlenebilir özel veri yok.' : 'No sensitive EXIF metadata found.'}</div>`;
+        exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Görsel tamamen temiz. Özel EXIF/GPS verisi barındırmıyor.' : 'Image is clean. No sensitive EXIF/GPS data.'}</span></div>`;
       } else {
         let html = '<div class="flex flex-col gap-1.5 w-full">';
         for (const [key, val] of filteredEntries) {
           html += `
-            <div class="flex items-center justify-between text-xs py-1.5 px-2 rounded-xl bg-slate-950/50 border border-slate-800/60">
-              <span class="text-slate-400 font-medium">${key}</span>
+            <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-gray-950 border border-gray-900">
+              <span class="text-gray-400 font-medium">${key}</span>
               <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${val}</span>
             </div>
           `;
@@ -362,14 +364,14 @@ document.getElementById('clearAllBtn')?.addEventListener('click', (e) => {
 
 function resetInspector() {
   const fileNameEl = document.getElementById('selectedFileName');
-  if (fileNameEl) fileNameEl.textContent = currentLang === 'tr' ? 'Dosya seçilmedi' : 'No file selected';
+  if (fileNameEl) fileNameEl.textContent = '';
   
   const previewContainer = document.getElementById('imagePreviewContainer');
   if (previewContainer) previewContainer.classList.add('hidden');
   
   const exifInspector = document.getElementById('exifInspector');
   if (exifInspector) {
-    exifInspector.innerHTML = `<div class="text-center py-8 text-slate-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</div>`;
+    exifInspector.innerHTML = `<div class="text-center py-12 text-gray-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</div>`;
   }
 }
 
@@ -387,7 +389,6 @@ function triggerDownload(blob, fileName) {
   }, 300);
 }
 
-// Görseli İşleme, Thumbnail Temizliği ve Gerçek Sıkıştırma
 async function processImage(item) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -419,10 +420,6 @@ async function processImage(item) {
       const qualityRange = document.getElementById('qualityRange');
       const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
 
-      if (targetMime === 'image/png' && quality < 0.9) {
-        targetMime = 'image/jpeg';
-      }
-
       if (targetMime === 'image/jpeg') {
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -435,7 +432,6 @@ async function processImage(item) {
       const drawW = is90 ? canvas.height : canvas.width;
       const drawH = is90 ? canvas.width : canvas.height;
       
-      // Fotoğraf piksellerini doğrudan Canvas'a çizerek gömülü Thumbnail ve XMP katmanlarını tamamen yok ederiz
       ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
 
       let newName = item.name;
@@ -487,7 +483,7 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
   const container = document.getElementById('updateStatusContainer');
   if (!container) return;
   container.classList.remove('hidden');
-  container.innerHTML = `<p class="text-[11px] text-slate-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
+  container.innerHTML = `<p class="text-[11px] text-gray-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
 
   try {
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
@@ -499,11 +495,11 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
       const downloadUrl = setupAsset ? setupAsset.browser_download_url : data.html_url;
 
       container.innerHTML = currentLang === 'tr' 
-        ? `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all cursor-pointer">Sürüm ${data.tag_name} İndir ve Kur</button>`
-        : `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all cursor-pointer">Download & Install ${data.tag_name}</button>`;
+        ? `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all cursor-pointer">Sürüm ${data.tag_name} İndir ve Kur</button>`
+        : `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all cursor-pointer">Download & Install ${data.tag_name}</button>`;
 
       document.getElementById('autoInstallBtn')?.addEventListener('click', async () => {
-        container.innerHTML = `<p class="text-[11px] text-slate-400 text-center">${currentLang === 'tr' ? 'Setup indiriliyor ve başlatılıyor...' : 'Downloading and launching setup...'}</p>`;
+        container.innerHTML = `<p class="text-[11px] text-gray-400 text-center">${currentLang === 'tr' ? 'Setup indiriliyor ve başlatılıyor...' : 'Downloading and launching setup...'}</p>`;
         
         if (typeof nw !== 'undefined' && nw.Shell) {
           nw.Shell.openExternal(downloadUrl);
