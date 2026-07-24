@@ -4,60 +4,64 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Repo Cek
-        uses: actions/checkout@v4
+    - name: Repo Cek
+      uses: actions/checkout@v3
 
-      - name: NW.js Birlestir ve Hazirla
-        shell: powershell
-        run: |
-          $nwVersion = "v0.85.0"
-          $nwZip = "nwjs-$nwVersion-win-x64.zip"
-          $nwUrl = "https://dl.nwjs.io/$nwVersion/$nwZip"
-          
-          Invoke-WebRequest -Uri $nwUrl -OutFile $nwZip
-          Expand-Archive -Path $nwZip -DestinationPath .
-          
-          Compress-Archive -Path "index.html", "app.js", "package.json" -DestinationPath "app.zip" -Force
-          Rename-Item -Path "app.zip" -NewName "app.nw" -Force
-          
-          $nwFolder = "nwjs-$nwVersion-win-x64"
-          cmd /c "copy /b `"$nwFolder\nw.exe`" + app.nw `"$nwFolder\EXIF-B-Gone.exe`""
-          
-          New-Item -ItemType Directory -Force -Path "dist\win-unpacked"
-          Copy-Item -Path "$nwFolder\*" -Destination "dist\win-unpacked" -Recurse -Force
+    - name: NW.js Birlestir ve Hazirla
+      shell: powershell
+      run: |
+        New-Item -ItemType Directory -Path build_dir
+        New-Item -ItemType Directory -Path dist
 
-      - name: Portable Zip Olustur
-        shell: powershell
-        run: |
-          Compress-Archive -Path "dist\win-unpacked\*" -DestinationPath "Output\EXIF-B-Gone-Portable.zip" -Force
+        # NW.js indir ve cikar
+        Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
+        Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
+        
+        # Uygulama dosyalarini paketle
+        $filesToPack = Get-ChildItem -Path "index.html", "app.js", "package.json", "icon.*" -ErrorAction SilentlyContinue
+        Compress-Archive -Path $filesToPack -DestinationPath "build_dir\app.nw.zip"
+        Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
 
-      - name: installer.iss Versiyonunu Guncelle
-        shell: powershell
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $ver = $tag -replace '^v', ''
-          if (-not $ver) { $ver = "1.5.0" }
-          (Get-Content installer.iss) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$ver`"" | Set-Content installer.iss
+        $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
+        Copy-Item -Path "build_dir\app.nw" -Destination $nwPath.FullName
+        
+        # NW.js exe ile birleştir
+        Set-Location -Path $nwPath.FullName
+        cmd /c "copy /b nw.exe+app.nw EXIF-B-Gone.exe"
+        Remove-Item nw.exe
+        Remove-Item app.nw
 
-      - name: Inno Setup ile Setup.exe Olustur
-        shell: powershell
-        run: |
-          choco install innosetup -y
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+        # Portable ZIP paketi
+        Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-      - name: Release Olustur
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            Output/EXIF-B-Gone-Setup-x64.exe
-            Output/EXIF-B-Gone-Portable.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: installer.iss Versiyonunu Güncelle
+      shell: powershell
+      run: |
+        $tagVersion = "${{ github.ref_name }}".Replace('v', '')
+        if (Test-Path "installer.iss") {
+          (Get-Content "installer.iss") -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$tagVersion`"" | Set-Content "installer.iss"
+        }
+
+    - name: Inno Setup ile Setup.exe Oluştur
+      shell: powershell
+      run: |
+        choco install innosetup -y --no-progress
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+    - name: Release Oluştur
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/EXIF-B-Gone-Windows-x64.zip
+          dist/EXIF-B-Gone-Setup-x64.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

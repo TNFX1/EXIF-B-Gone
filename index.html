@@ -3,196 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EXIF-B-Gone | Metadata & Privacy Cleaner</title>
-  
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+  <title>EXIF-B-Gone</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            zinc: {
-              850: '#1f1f23',
-              925: '#111115',
-              950: '#09090b',
-            }
-          }
-        }
-      }
-    }
-  </script>
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+  </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans flex flex-col justify-between selection:bg-rose-500 selection:text-white">
+<body class="bg-zinc-950 text-zinc-100 font-sans min-h-screen flex flex-col select-none overflow-x-hidden">
 
-  <header class="border-b border-zinc-800/80 bg-zinc-925/80 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 flex items-center justify-center shadow-lg shadow-rose-600/20">
-          <i class="fa-solid fa-shield-halved text-white text-lg"></i>
+  <header class="border-b border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="icon.png" alt="EXIF-B-Gone Logo" class="w-8 h-8 object-contain rounded-lg">
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-sm tracking-wide text-zinc-100">EXIF-B-Gone</h1>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">v1.5.0</span>
         </div>
-        <div>
-          <h1 class="font-bold text-base tracking-tight text-white flex items-center gap-2">
-            EXIF-B-Gone
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">v1.5.0</span>
-          </h1>
-          <p class="text-xs text-zinc-400 hidden sm:block" data-i18n="subtitle">Strip unwanted metadata from your photos & videos.</p>
-        </div>
+        <p class="text-[11px] text-zinc-400" data-i18n="subtitle">Strip unwanted metadata from your photos & videos.</p>
       </div>
-
-      <div class="flex items-center gap-2">
-        <button id="openFeedbackBtn" class="px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs font-medium transition-all border border-zinc-700/50 flex items-center gap-2">
-          <i class="fa-regular fa-comment-dots"></i>
-          <span data-i18n="btnFeedback">Feedback</span>
-        </button>
-        <button id="openSettingsBtn" class="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs transition-all border border-zinc-700/50">
-          <i class="fa-solid fa-gear text-sm"></i>
-        </button>
-      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <button id="openFeedbackBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 text-xs font-medium transition-all flex items-center gap-2 border border-zinc-700/50 cursor-pointer">
+        <i class="fa-regular fa-comment-dots text-rose-400"></i>
+        <span data-i18n="btnFeedback">Feedback</span>
+      </button>
+      <button id="openSettingsBtn" type="button" class="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 transition-all border border-zinc-700/50 cursor-pointer">
+        <i class="fa-solid fa-gear text-xs"></i>
+      </button>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-medium border border-emerald-400/30">
+    <i class="fa-solid fa-circle-check text-sm"></i>
+    <span id="toastMsg">Feedback sent successfully!</span>
+  </div>
 
-    <div class="lg:col-span-4 flex flex-col gap-5">
-
-      <div id="dropzone" class="border-2 border-dashed border-zinc-800 hover:border-rose-500/50 bg-zinc-900/40 hover:bg-rose-500/5 rounded-2xl p-6 transition-all text-center cursor-pointer group flex flex-col items-center justify-center gap-3">
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <div class="lg:col-span-7 flex flex-col gap-5">
+      
+      <div id="dropzone" class="border-2 border-dashed border-zinc-800 hover:border-zinc-700 rounded-2xl p-6 transition-all bg-zinc-900/30 flex flex-col items-center justify-center gap-3 cursor-pointer group">
         <input type="file" id="fileInput" multiple accept="image/*,video/*,.heic,.heif" class="hidden">
-        <div class="w-12 h-12 rounded-2xl bg-zinc-800/80 group-hover:scale-110 transition-transform flex items-center justify-center text-rose-400 border border-zinc-700/50">
-          <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+        <div class="w-12 h-12 rounded-full bg-zinc-800/80 group-hover:scale-110 transition-transform flex items-center justify-center border border-zinc-700/50">
+          <i class="fa-solid fa-cloud-arrow-up text-zinc-400 group-hover:text-rose-400 transition-colors"></i>
         </div>
-        <div>
+        <div class="text-center">
           <p class="text-xs font-semibold text-zinc-200" data-i18n="dragTitle">Drop your photos or videos here or click to browse</p>
           <p class="text-[11px] text-zinc-500 mt-1" data-i18n="dragSub">All files processed locally on your RAM, zero cloud upload.</p>
         </div>
       </div>
 
-      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4">
-        
-        <div>
-          <label class="block text-xs font-medium text-zinc-400 mb-1.5" data-i18n="outFormat">Export Format</label>
-          <select id="exportFormat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500">
-            <option value="original">Original Format (Default)</option>
-            <option value="jpeg">JPEG (.jpg)</option>
-            <option value="png">PNG (.png)</option>
-            <option value="webp">WebP (.webp)</option>
-            <option value="mp4">MP4 (.mp4)</option>
-            <option value="webm">WebM (.webm)</option>
-          </select>
+      <div class="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          
+          <div>
+            <label class="block text-[11px] font-medium text-zinc-400 mb-1" data-i18n="outFormat">Export Format</label>
+            <select id="exportFormat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+              <option value="original">Original Format (Default)</option>
+              <option value="jpeg">JPEG (.jpg)</option>
+              <option value="png">PNG (.png)</option>
+              <option value="webp">WebP (.webp)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-medium text-zinc-400 mb-1" data-i18n="resizeMax">Size (Width x Height)</label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="maxWidthInput" placeholder="Width (px)" data-i18n-ph="phWidth" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+              <span class="text-zinc-600 text-xs">x</span>
+              <input type="number" id="maxHeightInput" placeholder="Height (px)" data-i18n-ph="phHeight" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-[11px] font-medium text-zinc-400" data-i18n="qualityLabel">Quality</label>
+              <span id="qualityVal" class="text-[11px] font-mono text-rose-400">90%</span>
+            </div>
+            <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.9" class="w-full accent-rose-500 cursor-pointer mt-2">
+          </div>
+
         </div>
 
-        <div>
-          <label class="block text-xs font-medium text-zinc-400 mb-1.5" data-i18n="resizeMax">Size (Width x Height)</label>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="number" id="maxWidthInput" placeholder="Width (px)" data-i18n-ph="phWidth" class="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500">
-            <input type="number" id="maxHeightInput" placeholder="Height (px)" data-i18n-ph="phHeight" class="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500">
+        <div class="flex items-center justify-between border-t border-zinc-800/60 pt-3">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-zinc-500 font-medium" data-i18n="lblTransform">Rotate / Flip:</span>
+            <div class="flex items-center gap-1">
+              <button id="rotateLeftBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i> <span data-i18n="btnRotateLeft">Left</span>
+              </button>
+              <button id="rotateRightBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right text-[10px]"></i> <span data-i18n="btnRotateRight">Right</span>
+              </button>
+              <button id="flipHBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 text-xs transition-colors border border-zinc-700/40 cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-left-right text-[10px]"></i> <span data-i18n="btnFlipH">Flip</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <div class="flex justify-between items-center mb-1.5">
-            <label class="text-xs font-medium text-zinc-400" data-i18n="qualityLabel">Quality</label>
-            <span id="qualityVal" class="text-xs font-mono text-rose-400">90%</span>
-          </div>
-          <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.9" class="w-full accent-rose-500 bg-zinc-950 h-1.5 rounded-lg cursor-pointer">
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-zinc-400 mb-1.5" data-i18n="lblTransform">Rotate / Flip:</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button id="rotateLeftBtn" class="py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium transition-all" data-i18n="btnRotateLeft">Left</button>
-            <button id="rotateRightBtn" class="py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium transition-all" data-i18n="btnRotateRight">Right</button>
-            <button id="flipHBtn" class="py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium transition-all" data-i18n="btnFlipH">Flip</button>
-          </div>
-          <div class="grid grid-cols-3 gap-2 mt-2">
-            <button id="scale50Btn" class="py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium transition-all">50%</button>
-            <button id="scale75Btn" class="py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium transition-all">75%</button>
-            <button id="resetScaleBtn" class="py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-[11px] text-zinc-300 font-medium transition-all" data-i18n="btnResetScale">Reset</button>
+          <div class="flex items-center gap-1">
+            <button id="scale50Btn" type="button" class="px-2 py-1 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 text-[10px] text-zinc-400 transition-colors">%50</button>
+            <button id="scale75Btn" type="button" class="px-2 py-1 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 text-[10px] text-zinc-400 transition-colors">%75</button>
+            <button id="resetScaleBtn" type="button" class="px-2 py-1 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 text-[10px] text-zinc-400 transition-colors" data-i18n="btnResetScale">Reset</button>
           </div>
         </div>
       </div>
 
-      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 flex-1">
-        <div class="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-          <span class="text-xs font-semibold text-zinc-300 flex items-center gap-2">
-            <span data-i18n="queueTitle">Queue</span>
-            <span id="fileCount" class="px-2 py-0.5 rounded-full bg-zinc-800 text-[10px] text-zinc-400 font-mono">0</span>
-          </span>
-          <button id="clearAllBtn" class="text-[11px] text-zinc-500 hover:text-rose-400 transition-colors" data-i18n="btnClear">Clear</button>
+      <div class="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-rose-500 text-xs"></i>
+            <span class="text-xs font-semibold text-zinc-200" data-i18n="queueTitle">Queue</span>
+            <span id="fileCount" class="px-1.5 py-0.2 rounded-full bg-zinc-800 text-[10px] font-mono text-zinc-400">0</span>
+          </div>
+          <button id="clearAllBtn" type="button" class="text-[11px] text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer" data-i18n="btnClear">Clear</button>
         </div>
 
-        <div id="fileList" class="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+        <div id="fileList" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
           <div id="emptyState" class="text-center py-8 text-zinc-600 text-xs" data-i18n="emptyState">No files in queue.</div>
         </div>
 
-        <div class="flex gap-2 pt-2 border-t border-zinc-800/80 mt-auto">
-          <button id="processBtn" disabled class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50" data-i18n="btnProcess">
-            Clean & Download
+        <div class="flex items-center gap-2 pt-2 mt-auto border-t border-zinc-800/60">
+          <button id="processBtn" disabled class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span data-i18n="btnProcess">Clean & Download</span>
           </button>
-          <button id="zipBtn" disabled class="py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50" data-i18n="btnZip">
-            Download ZIP
+          <button id="zipBtn" disabled class="py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50">
+            <i class="fa-solid fa-file-zipper"></i>
+            <span data-i18n="btnZip">Download ZIP</span>
           </button>
         </div>
       </div>
 
     </div>
 
-    <div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-
-      <div class="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between min-h-[380px] md:min-h-[500px]">
-        <div class="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-          <span class="text-xs font-semibold text-zinc-300 truncate max-w-[200px]" id="selectedFileName">--</span>
-          <span class="text-[10px] font-mono text-zinc-500 uppercase">Preview</span>
+    <div class="lg:col-span-5 bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-shield-cat text-rose-500 text-xs"></i>
+          <span class="text-xs font-semibold text-zinc-200" data-i18n="inspectorTitle">Privacy Inspector</span>
         </div>
-
-        <div id="previewContainer" class="flex-1 flex items-center justify-center overflow-hidden my-4 relative hidden">
-          <img id="imagePreview" class="max-h-80 max-w-full object-contain rounded-lg transition-transform duration-200">
-          <video id="videoPreview" class="max-h-80 max-w-full object-contain rounded-lg transition-transform duration-200 hidden" controls muted></video>
-        </div>
-
-        <div class="text-center text-[11px] text-zinc-600 border-t border-zinc-800/80 pt-3">
-          Metadata is fully stripped during export.
-        </div>
+        <span id="selectedFileName" class="text-[11px] font-mono text-zinc-500 truncate max-w-[150px]"></span>
       </div>
 
-      <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 min-h-[380px] md:min-h-[500px]">
-        <div class="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-          <span class="text-xs font-semibold text-zinc-300 flex items-center gap-2">
-            <i class="fa-solid fa-bug text-rose-400"></i>
-            <span data-i18n="inspectorTitle">Privacy Inspector</span>
-          </span>
-        </div>
-
-        <div id="exifInspector" class="flex-1 overflow-y-auto max-h-[420px] pr-1 custom-scrollbar">
-          <div class="text-center py-12 text-zinc-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">
-            Select a file to inspect embedded metadata.
-          </div>
-        </div>
+      <div id="previewContainer" class="hidden relative w-full h-48 bg-black/80 rounded-xl overflow-hidden border border-zinc-800 flex items-center justify-center p-2">
+        <img id="imagePreview" src="" alt="Preview" class="max-w-full max-h-full object-contain transition-transform duration-300">
+        <video id="videoPreview" controls class="hidden max-w-full max-h-full object-contain transition-transform duration-300"></video>
       </div>
 
+      <div id="exifInspector" class="flex-1 overflow-y-auto max-h-[360px] pr-1">
+        <div class="text-center py-12 text-zinc-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">
+          Select a file to inspect embedded metadata.
+        </div>
+      </div>
     </div>
 
   </main>
 
-  <footer class="border-t border-zinc-800/80 py-4 text-center text-xs text-zinc-500">
-    <p data-i18n="footerText">EXIF-B-Gone • Open Source Privacy Tool</p>
+  <footer class="border-t border-zinc-800/60 bg-zinc-950 py-3 text-center text-[10px] text-zinc-600" data-i18n="footerText">
+    EXIF-B-Gone • Open Source Privacy Tool
   </footer>
 
   <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-sm p-5 flex flex-col gap-4 shadow-2xl">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h3 class="text-xs font-bold text-zinc-200" data-i18n="settingsTitle">Settings</h3>
-        <button id="closeSettingsBtn" class="text-zinc-500 hover:text-zinc-300"><i class="fa-solid fa-xmark text-sm"></i></button>
+        <h3 class="text-sm font-semibold text-zinc-200" data-i18n="settingsTitle">Settings</h3>
+        <button id="closeSettingsBtn" class="text-zinc-500 hover:text-zinc-300 transition-colors"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div>
-        <label class="block text-xs font-medium text-zinc-400 mb-1.5" data-i18n="langLabel">App Language</label>
-        <select id="langSelect" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500">
+        <label class="block text-xs text-zinc-400 mb-1.5" data-i18n="langLabel">App Language</label>
+        <select id="langSelect" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
           <option value="en">English</option>
           <option value="tr">Türkçe</option>
         </select>
@@ -201,24 +189,19 @@
   </div>
 
   <div id="feedbackModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-5 flex flex-col gap-4 shadow-2xl">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h3 class="text-xs font-bold text-zinc-200" data-i18n="feedbackTitle">Send Feedback</h3>
-        <button id="closeFeedbackBtn" class="text-zinc-500 hover:text-zinc-300"><i class="fa-solid fa-xmark text-sm"></i></button>
+        <h3 class="text-sm font-semibold text-zinc-200" data-i18n="feedbackTitle">Send Feedback</h3>
+        <button id="closeFeedbackBtn" class="text-zinc-500 hover:text-zinc-300 transition-colors"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="feedbackForm" class="flex flex-col gap-3">
-        <input type="email" id="feedbackEmail" placeholder="Your Email (optional)" data-i18n-ph="phFeedbackEmail" class="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500">
-        <textarea id="feedbackMessage" rows="4" required placeholder="Write your thoughts or issues..." data-i18n-ph="phFeedbackMessage" class="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500 resize-none"></textarea>
-        <button type="submit" id="sendFeedbackBtn" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-lg shadow-rose-600/20" data-i18n="btnSendFeedback">
+        <input type="email" id="feedbackEmail" placeholder="Your Email (optional)" data-i18n-ph="phFeedbackEmail" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
+        <textarea id="feedbackMessage" required rows="4" placeholder="Write your thoughts or issues..." data-i18n-ph="phFeedbackMessage" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50 resize-none"></textarea>
+        <button id="sendFeedbackBtn" type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-lg shadow-rose-600/20" data-i18n="btnSendFeedback">
           Send
         </button>
       </form>
     </div>
-  </div>
-
-  <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 bg-emerald-600 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 z-50">
-    <i class="fa-solid fa-circle-check"></i>
-    <span id="toastMsg">Feedback sent!</span>
   </div>
 
   <script src="app.js"></script>
