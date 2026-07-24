@@ -468,10 +468,10 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
   }
 });
 
-// Geri Bildirim Gönderme Handler'ı (FormData ile Düzeltildi)
+// Geri Bildirim Gönderme (Sorunsuz AJAX/Form Payload)
 document.getElementById('feedbackForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('feedbackEmail')?.value;
+  const email = document.getElementById('feedbackEmail')?.value || 'no-reply@exifbgone.app';
   const message = document.getElementById('feedbackMessage')?.value;
   const sendBtn = document.getElementById('sendFeedbackBtn');
 
@@ -480,15 +480,16 @@ document.getElementById('feedbackForm')?.addEventListener('submit', async (e) =>
     sendBtn.textContent = currentLang === 'tr' ? 'Gönderiliyor...' : 'Sending...';
   }
 
-  const formData = new FormData();
-  formData.append('email', email || 'Unspecified');
-  formData.append('message', message);
-
   try {
+    const params = new URLSearchParams();
+    params.append('email', email);
+    params.append('message', message);
+
     const response = await fetch(FORMSPREE_ENDPOINT, {
       method: 'POST',
-      body: formData,
+      body: params,
       headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json'
       }
     });
@@ -498,7 +499,11 @@ document.getElementById('feedbackForm')?.addEventListener('submit', async (e) =>
       document.getElementById('feedbackForm').reset();
       feedbackModal?.classList.add('hidden');
     } else {
-      alert(currentLang === 'tr' ? 'Bir hata oluştu. Lütfen Formspree ID adresinizi kontrol edin.' : 'An error occurred. Please check your Formspree ID.');
+      // Eğer Formspree hesabı doğrulama bekliyorsa veya ID hatalıysa yedek yönlendirme:
+      if (typeof nw !== 'undefined' && nw.Shell) {
+        nw.Shell.openExternal(`mailto:support@exifbgone.app?subject=EXIF-B-Gone Feedback&body=${encodeURIComponent(message)}`);
+      }
+      alert(currentLang === 'tr' ? 'Geri bildirim servisine erişilemedi. Lütfen Formspree paneli ayarlarından AJAX isteklerine izin verdiğinizden emin olun.' : 'Failed to submit feedback.');
     }
   } catch (error) {
     alert(currentLang === 'tr' ? 'Bağlantı hatası oluştu.' : 'Connection error occurred.');
