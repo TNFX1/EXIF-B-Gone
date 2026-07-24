@@ -1,0 +1,21 @@
+{
+  "name": "exif-b-gone",
+  "version": "1.2.1",
+  "description": "Privacy & EXIF Metadata Scrubber Desktop App",
+  "main": "index.html",
+  "scripts": {
+    "start": "nw ."
+  },
+  "window": {
+    "title": "EXIF-B-Gone",
+    "icon": "icon.png",
+    "width": 1280,
+    "height": 800,
+    "min_width": 1024,
+    "min_height": 700,
+    "position": "center",
+    "resizable": true
+  },
+  "author": "TNFX1",
+  "license": "MIT"
+}
