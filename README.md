@@ -8,7 +8,7 @@
   
   *Easily inspect and strip sensitive metadata like GPS location, capture dates, hardware serial numbers, and camera settings from your images — 100% locally on your device.*
 
-  [![Version](https://img.shields.io/badge/version-1.1.0-rose.svg?style=for-the-badge)](https://github.com/TNFX1/EXIF-B-Gone)
+  [![Version](https://img.shields.io/badge/version-1.2.1-rose.svg?style=for-the-badge)](https://github.com/TNFX1/EXIF-B-Gone)
   [![License](https://img.shields.io/badge/license-MIT-emerald.svg?style=for-the-badge)](LICENSE)
   [![Privacy](https://img.shields.io/badge/privacy-100%25%20Client--Side-blue.svg?style=for-the-badge)](#-privacy--security)
   [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web-purple.svg?style=for-the-badge)](#-installation)
