@@ -160,7 +160,8 @@ async function handleFiles(files) {
       size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
       exif: exifData,
       rotation: 0,
-      flipH: false
+      flipH: false,
+      convertedBlob: null // HEIC için ön işlenmiş görsel tutulacak
     });
   }
   
@@ -265,7 +266,6 @@ async function renderLivePreview() {
 
   previewContainer.classList.remove('hidden');
 
-  // İşlenmiş güncel halini önizleme için al
   try {
     const processed = await processImage(item);
     if (previewImg.dataset.oldBlobUrl) {
@@ -275,7 +275,7 @@ async function renderLivePreview() {
     previewImg.dataset.oldBlobUrl = newUrl;
     previewImg.src = newUrl;
   } catch (err) {
-    previewImg.src = URL.createObjectURL(item.file);
+    console.error("Önizleme oluşturulamadı:", err);
   }
 }
 
@@ -397,10 +397,39 @@ function triggerDownload(blob, fileName) {
   }
 }
 
+async function getImageSourceBlob(item) {
+  const ext = item.name.split('.').pop().toLowerCase();
+  
+  // HEIC veya HEIF dosyası ise heic2any ile JPEG Blob'una dönüştür
+  if (ext === 'heic' || ext === 'heif' || item.file.type === 'image/heic' || item.file.type === 'image/heif') {
+    if (item.convertedBlob) {
+      return item.convertedBlob;
+    }
+    if (typeof heic2any !== 'undefined') {
+      try {
+        const converted = await heic2any({
+          blob: item.file,
+          toType: "image/jpeg",
+          quality: 0.95
+        });
+        const finalBlob = Array.isArray(converted) ? converted[0] : converted;
+        item.convertedBlob = finalBlob;
+        return finalBlob;
+      } catch (e) {
+        console.error("HEIC dönüşüm hatası:", e);
+      }
+    }
+  }
+  return item.file;
+}
+
 async function processImage(item) {
+  const sourceBlob = await getImageSourceBlob(item);
+  
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
+    
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
@@ -427,8 +456,10 @@ async function processImage(item) {
         const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
         
         let targetMime = 'image/jpeg';
+        const isHeic = item.name.toLowerCase().endsWith('.heic') || item.name.toLowerCase().endsWith('.heif');
+        
         if (exportFormatSelect === 'original') {
-          if (item.file.type && item.file.type !== 'image/heic' && item.file.type !== 'image/heif') {
+          if (item.file.type && !isHeic) {
             targetMime = item.file.type;
           }
         } else {
@@ -470,8 +501,9 @@ async function processImage(item) {
         reject(err);
       }
     };
+    
     img.onerror = (err) => reject(err);
-    img.src = URL.createObjectURL(item.file);
+    img.src = URL.createObjectURL(sourceBlob);
   });
 }
 
