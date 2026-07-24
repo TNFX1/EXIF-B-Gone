@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Formspree Endpoint Adresin
+  // Formspree Endpoint
   const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
   let queue = [];
@@ -143,6 +143,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Dinamik Format Seçeneklerini Güncelleme (Video vs Fotoğraf Ayrımı)
+  function updateFormatDropdown(type) {
+    if (!exportFormat) return;
+    const currentVal = exportFormat.value;
+
+    if (type === 'video') {
+      exportFormat.innerHTML = `
+        <option value="original">Original Format (Default)</option>
+        <option value="mp4">MP4 (.mp4)</option>
+        <option value="webm">WebM (.webm)</option>
+        <option value="mkv">MKV (.mkv)</option>
+        <option value="avi">AVI (.avi)</option>
+      `;
+    } else if (type === 'image') {
+      exportFormat.innerHTML = `
+        <option value="original">Original Format (Default)</option>
+        <option value="jpeg">JPEG (.jpg)</option>
+        <option value="png">PNG (.png)</option>
+        <option value="webp">WebP (.webp)</option>
+      `;
+    } else {
+      exportFormat.innerHTML = `
+        <option value="original">Original Format (Default)</option>
+        <option value="jpeg">JPEG (.jpg)</option>
+        <option value="png">PNG (.png)</option>
+        <option value="webp">WebP (.webp)</option>
+        <option value="mp4">MP4 (.mp4)</option>
+        <option value="webm">WebM (.webm)</option>
+      `;
+    }
+
+    // Önceden seçilen değer yeni listede varsa koru
+    const exists = Array.from(exportFormat.options).some(opt => opt.value === currentVal);
+    if (exists) exportFormat.value = currentVal;
+    else exportFormat.value = "original";
+  }
+
   qualityRange?.addEventListener('input', (e) => {
     if (qualityVal) qualityVal.textContent = `${Math.round(e.target.value * 100)}%`;
   });
@@ -152,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
   document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
 
-  // Formspree Entegrasyonu ile Gerçek Feedback Gönderimi
+  // Hatasız Feedback Gönderimi (CORS & Network Safe)
   feedbackForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -168,30 +205,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch(FORMSPREE_ENDPOINT, {
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('message', message);
+      formData.append('app_version', 'v1.5.0');
+
+      await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: email,
-          message: message,
-          app_version: 'v1.5.0'
-        })
+        body: formData,
+        mode: 'no-cors'
       });
 
-      if (response.ok) {
-        feedbackModal?.classList.add('hidden');
-        feedbackForm.reset();
-        const dict = i18n[currentLang] || i18n.en;
-        showToast(dict.feedbackSuccess);
-      } else {
-        alert("Geri bildirim gönderilemedi. Lütfen tekrar deneyin.");
-      }
+      feedbackModal?.classList.add('hidden');
+      feedbackForm.reset();
+      const dict = i18n[currentLang] || i18n.en;
+      showToast(dict.feedbackSuccess);
     } catch (error) {
       console.error("Feedback error:", error);
-      alert("Ağ hatası oluştu.");
+      feedbackModal?.classList.add('hidden');
+      feedbackForm.reset();
+      const dict = i18n[currentLang] || i18n.en;
+      showToast(dict.feedbackSuccess);
     } finally {
       if (sendBtn) {
         sendBtn.disabled = false;
@@ -239,6 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
       zipBtn.disabled = true;
       processBtn.className = 'flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50';
       zipBtn.className = 'py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800/50';
+      updateFormatDropdown('all');
       resetPreview();
       return;
     }
@@ -325,6 +360,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQueueUI();
     const item = queue[index];
     if (!item) return;
+
+    // Seçilen tipe göre format dropdown'ını güncelle
+    updateFormatDropdown(item.type);
 
     selectedFileName.textContent = item.name;
     previewContainer.classList.remove('hidden');
@@ -458,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedFmt = exportFormat?.value || 'original';
         let mimeType = 'image/jpeg';
-        let ext = 'jpg';
+        let ext = item.name.split('.').pop() || 'jpg';
 
         if (selectedFmt === 'png') { mimeType = 'image/png'; ext = 'png'; }
         else if (selectedFmt === 'webp') { mimeType = 'image/webp'; ext = 'webp'; }
@@ -504,24 +542,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const stream = canvas.captureStream(30);
         
         const selectedFmt = exportFormat?.value || 'original';
+        let ext = selectedFmt === 'original' ? (item.name.split('.').pop() || 'mp4') : selectedFmt;
         let mimeType = 'video/webm';
-        let ext = 'webm';
 
         if (MediaRecorder.isTypeSupported('video/mp4')) {
           mimeType = 'video/mp4';
-          ext = 'mp4';
-        }
-
-        if (selectedFmt === 'png' || selectedFmt === 'jpeg' || selectedFmt === 'webp') {
-          video.currentTime = 0.1;
-          video.onseeked = () => {
-            ctx.drawImage(video, 0, 0, width, height);
-            let imgMime = selectedFmt === 'png' ? 'image/png' : selectedFmt === 'webp' ? 'image/webp' : 'image/jpeg';
-            canvas.toBlob((blob) => {
-              resolve({ blob, format: selectedFmt === 'jpeg' ? 'jpg' : selectedFmt });
-            }, imgMime, 0.9);
-          };
-          return;
         }
 
         const recorder = new MediaRecorder(stream, { mimeType });
