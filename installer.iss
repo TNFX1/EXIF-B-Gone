@@ -1,19 +1,21 @@
 #define MyAppName "EXIF-B-Gone"
 #define MyAppVersion "1.5.0"
 #define MyAppPublisher "EXIF-B-Gone"
+#define MyAppURL "https://github.com/your-username/EXIF-B-Gone"
 #define MyAppExeName "EXIF-B-Gone.exe"
 
 [Setup]
-AppId={{D37E88E4-1E4E-4340-97E3-1383F67822D8}
+AppId={{D37E154A-8A11-4773-A3B9-45B0A1C8F5B8}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+OutputDir=Output
 OutputBaseFilename=EXIF-B-Gone-Setup-x64
-SetupIconFile=icon.ico
-UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -29,8 +31,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "dist\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{autopf}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

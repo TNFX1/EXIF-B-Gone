@@ -1,67 +1,40 @@
-name: Build Desktop App
+name: Build and Release
 
 on:
   push:
     tags:
       - 'v*'
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Repo Cek
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: NW.js Birlestir ve Hazirla
-      shell: powershell
-      run: |
-        New-Item -ItemType Directory -Path build_dir
-        New-Item -ItemType Directory -Path dist
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-        # NW.js indir ve cikar
-        Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
-        Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
-        
-        # Uygulama dosyalarini paketle
-        $filesToPack = Get-ChildItem -Path "index.html", "app.js", "package.json", "icon.*" -ErrorAction SilentlyContinue
-        Compress-Archive -Path $filesToPack -DestinationPath "build_dir\app.nw.zip"
-        Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
+      - name: Install Dependencies
+        run: npm ci
 
-        $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
-        Copy-Item -Path "build_dir\app.nw" -Destination $nwPath.FullName
-        
-        # NW.js exe ile birleştir
-        Set-Location -Path $nwPath.FullName
-        cmd /c "copy /b nw.exe+app.nw EXIF-B-Gone.exe"
-        Remove-Item nw.exe
-        Remove-Item app.nw
+      - name: Build Electron App (Unpacked)
+        run: npm run build:win
 
-        # Portable ZIP paketi
-        Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
+      - name: Compile Inno Setup
+        uses: MinCi/Inno-Setup-Action@v1.2.2
+        with:
+          filepath: installer.iss
 
-    - name: installer.iss Versiyonunu Güncelle
-      shell: powershell
-      run: |
-        $tagVersion = "${{ github.ref_name }}".Replace('v', '')
-        if (Test-Path "installer.iss") {
-          (Get-Content "installer.iss") -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$tagVersion`"" | Set-Content "installer.iss"
-        }
-
-    - name: Inno Setup ile Setup.exe Oluştur
-      shell: powershell
-      run: |
-        choco install innosetup -y --no-progress
-        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
-
-    - name: Release Oluştur
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          dist/EXIF-B-Gone-Windows-x64.zip
-          dist/EXIF-B-Gone-Setup-x64.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: Output/EXIF-B-Gone-Setup-x64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
