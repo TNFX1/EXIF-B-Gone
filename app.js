@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+  // Formspree Endpoint Adresin
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
+
   let queue = [];
   let selectedIndex = -1;
   let currentRotation = 0;
@@ -125,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      // Do not override dropdown option elements
       if (dict[key] && el.tagName !== 'OPTION') el.textContent = dict[key];
     });
 
@@ -150,12 +152,52 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('openFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.remove('hidden'));
   document.getElementById('closeFeedbackBtn')?.addEventListener('click', () => feedbackModal?.classList.add('hidden'));
 
-  feedbackForm?.addEventListener('submit', (e) => {
+  // Formspree Entegrasyonu ile Gerçek Feedback Gönderimi
+  feedbackForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    feedbackModal?.classList.add('hidden');
-    feedbackForm.reset();
-    const dict = i18n[currentLang] || i18n.en;
-    showToast(dict.feedbackSuccess);
+
+    const sendBtn = document.getElementById('sendFeedbackBtn');
+    const email = document.getElementById('feedbackEmail')?.value || 'Anonim';
+    const message = document.getElementById('feedbackMessage')?.value;
+
+    if (!message) return;
+
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      sendBtn.style.opacity = "0.5";
+    }
+
+    try {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          message: message,
+          app_version: 'v1.5.0'
+        })
+      });
+
+      if (response.ok) {
+        feedbackModal?.classList.add('hidden');
+        feedbackForm.reset();
+        const dict = i18n[currentLang] || i18n.en;
+        showToast(dict.feedbackSuccess);
+      } else {
+        alert("Geri bildirim gönderilemedi. Lütfen tekrar deneyin.");
+      }
+    } catch (error) {
+      console.error("Feedback error:", error);
+      alert("Ağ hatası oluştu.");
+    } finally {
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        sendBtn.style.opacity = "1";
+      }
+    }
   });
 
   langSelect?.addEventListener('change', (e) => applyLanguage(e.target.value));
@@ -245,31 +287,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Deep Scanner for MP4 / MOV Container Binary Data
   async function scanVideoMetadata(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      // Read first 2MB for headers & metadata atoms
       const slice = file.slice(0, 2 * 1024 * 1024);
       reader.onload = (e) => {
         const buffer = new Uint8Array(e.target.result);
         const str = String.fromCharCode.apply(null, buffer.subarray(0, 50000));
-        
         const extracted = {};
 
-        // Search MP4 Atoms
         if (str.includes('moov')) extracted['Container Atom'] = 'moov Atom Present';
         if (str.includes('udta')) extracted['User Data Atom'] = 'udta Header Found';
         if (str.includes('meta')) extracted['Metadata Atom'] = 'meta Atom Found';
         if (str.includes('location') || str.includes('xyz')) extracted['GPS Location'] = 'Coordinates Embedded';
 
-        // Search Device or Encoder Strings
         const encoderMatch = str.match(/(Apple|iPhone|Android|Samsung|Canon|Sony|GoPro|FFmpeg|HandBrake|QuickTime)[a-zA-Z0-9_\-\s]*/i);
         if (encoderMatch) {
           extracted['Encoder / Device'] = encoderMatch[0].trim();
         }
 
-        // Search Dates (YYYY:MM:DD or YYYY-MM-DD)
         const dateMatch = str.match(/\b(19|20)\d{2}[:\-\/](0[1-9]|1[0-2])[:\-\/](0[1-9]|[12]\d|3[01])\b/);
         if (dateMatch) {
           extracted['Creation / Modify Date'] = dateMatch[0];
@@ -422,32 +458,114 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedFmt = exportFormat?.value || 'original';
         let mimeType = 'image/jpeg';
-        if (selectedFmt === 'png') mimeType = 'image/png';
-        if (selectedFmt === 'webp') mimeType = 'image/webp';
+        let ext = 'jpg';
+
+        if (selectedFmt === 'png') { mimeType = 'image/png'; ext = 'png'; }
+        else if (selectedFmt === 'webp') { mimeType = 'image/webp'; ext = 'webp'; }
+        else if (selectedFmt === 'jpeg') { mimeType = 'image/jpeg'; ext = 'jpg'; }
 
         const quality = parseFloat(qualityRange?.value) || 0.9;
         canvas.toBlob((blob) => {
-          resolve({ blob, format: selectedFmt === 'original' ? 'jpg' : selectedFmt });
+          resolve({ blob, format: ext });
         }, mimeType, quality);
       };
       img.src = URL.createObjectURL(item.file);
     });
   }
 
+  async function processVideo(item) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(item.file);
+      video.muted = true;
+      video.playsInline = true;
+
+      video.onloadedmetadata = () => {
+        const canvas = document.createElement('canvas');
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        const maxW = parseInt(maxWidthInput?.value) || 0;
+        const maxH = parseInt(maxHeightInput?.value) || 0;
+
+        if (maxW > 0 && width > maxW) {
+          height = Math.round((height * maxW) / width);
+          width = maxW;
+        }
+        if (maxH > 0 && height > maxH) {
+          width = Math.round((width * maxH) / height);
+          height = maxH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const stream = canvas.captureStream(30);
+        
+        const selectedFmt = exportFormat?.value || 'original';
+        let mimeType = 'video/webm';
+        let ext = 'webm';
+
+        if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mimeType = 'video/mp4';
+          ext = 'mp4';
+        }
+
+        if (selectedFmt === 'png' || selectedFmt === 'jpeg' || selectedFmt === 'webp') {
+          video.currentTime = 0.1;
+          video.onseeked = () => {
+            ctx.drawImage(video, 0, 0, width, height);
+            let imgMime = selectedFmt === 'png' ? 'image/png' : selectedFmt === 'webp' ? 'image/webp' : 'image/jpeg';
+            canvas.toBlob((blob) => {
+              resolve({ blob, format: selectedFmt === 'jpeg' ? 'jpg' : selectedFmt });
+            }, imgMime, 0.9);
+          };
+          return;
+        }
+
+        const recorder = new MediaRecorder(stream, { mimeType });
+        const chunks = [];
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          resolve({ blob, format: ext });
+        };
+
+        recorder.start();
+        video.play();
+
+        function drawFrame() {
+          if (video.paused || video.ended) {
+            recorder.stop();
+            return;
+          }
+          ctx.drawImage(video, 0, 0, width, height);
+          requestAnimationFrame(drawFrame);
+        }
+
+        drawFrame();
+      };
+    });
+  }
+
   processBtn?.addEventListener('click', async () => {
     for (const item of queue) {
+      let result;
       if (item.type === 'image') {
-        const { blob, format } = await processImage(item);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${format}`;
-        a.click();
+        result = await processImage(item);
       } else {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(item.file);
-        a.download = `cleaned_${item.name}`;
-        a.click();
+        result = await processVideo(item);
       }
+      
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(result.blob);
+      a.download = `cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${result.format}`;
+      a.click();
     }
   });
 
@@ -456,12 +574,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const zip = new JSZip();
 
     for (const item of queue) {
+      let result;
       if (item.type === 'image') {
-        const { blob, format } = await processImage(item);
-        zip.file(`cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${format}`, blob);
+        result = await processImage(item);
       } else {
-        zip.file(`cleaned_${item.name}`, item.file);
+        result = await processVideo(item);
       }
+      zip.file(`cleaned_${item.name.replace(/\.[^/.]+$/, '')}.${result.format}`, result.blob);
     }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
