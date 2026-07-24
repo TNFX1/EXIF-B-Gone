@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const CURRENT_VERSION = "v1.5.0";
+  const CURRENT_VERSION = "v1.5.1";
   const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
   const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
@@ -234,6 +234,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }, false);
   }
 
+  // Video Metadata Parser (via MediaInfo or Basic Attributes)
+  async function parseVideoMetadata(file) {
+    let meta = {
+      "File Name": file.name,
+      "File Size": formatBytes(file.size),
+      "File Type": file.type || "video/mp4",
+      "Last Modified": new Date(file.lastModified).toLocaleString()
+    };
+
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = URL.createObjectURL(file);
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        meta["Duration"] = `${Math.round(video.duration)} sec`;
+        meta["Resolution"] = `${video.videoWidth} x ${video.videoHeight}`;
+        resolve(meta);
+      };
+      video.onerror = () => resolve(meta);
+    });
+  }
+
   async function handleFiles(files) {
     for (const file of files) {
       const isImg = file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name);
@@ -264,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
           displayUrl = URL.createObjectURL(file);
         }
       } else {
+        parsedMeta = await parseVideoMetadata(file);
         displayUrl = URL.createObjectURL(file);
       }
 
@@ -291,6 +315,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+
+  function updateExportFormatOptions(type) {
+    if (!exportFormat) return;
+    exportFormat.innerHTML = '';
+
+    if (type === 'video') {
+      exportFormat.innerHTML = `
+        <option value="original">Original Format</option>
+        <option value="mp4">MP4 Video (.mp4)</option>
+        <option value="webm">WebM Video (.webm)</option>
+      `;
+    } else {
+      exportFormat.innerHTML = `
+        <option value="original">Original Format</option>
+        <option value="jpeg">JPEG (.jpg)</option>
+        <option value="png">PNG (.png)</option>
+        <option value="webp">WebP (.webp)</option>
+      `;
+    }
   }
 
   function renderQueue() {
@@ -349,6 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function selectItem(index) {
     selectedIndex = index;
+    currentRotation = 0;
+    currentFlip = false;
     renderQueue();
     renderInspector();
   }
@@ -377,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inspectorPreview) inspectorPreview.innerHTML = `<span class="text-xs text-zinc-600" data-i18n="inspectorEmpty">${i18n[currentLang || 'en'].inspectorEmpty}</span>`;
     if (metadataTable) metadataTable.innerHTML = '';
     if (inspectorEmptyState) inspectorEmptyState.classList.remove('hidden');
+    updateExportFormatOptions('image');
   }
 
   function renderInspector() {
@@ -388,11 +435,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = queue[selectedIndex];
     if (inspectorEmptyState) inspectorEmptyState.classList.add('hidden');
 
+    updateExportFormatOptions(item.type);
+
+    const transformStyle = `transform: rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1}); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);`;
+
     if (inspectorPreview) {
       if (item.type === 'image') {
-        inspectorPreview.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full object-contain rounded-lg shadow-md" style="transform: rotate(${currentRotation}deg) scaleX(${currentFlip ? -1 : 1})">`;
+        inspectorPreview.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full object-contain rounded-lg shadow-md" style="${transformStyle}">`;
       } else {
-        inspectorPreview.innerHTML = `<video src="${item.url}" controls class="max-h-full max-w-full rounded-lg shadow-md"></video>`;
+        inspectorPreview.innerHTML = `<video src="${item.url}" controls class="max-h-full max-w-full rounded-lg shadow-md" style="${transformStyle}"></video>`;
       }
     }
 
@@ -520,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let ext = selectedFmt === 'original' ? (item.name.split('.').pop() || 'mp4') : selectedFmt;
         let mimeType = 'video/webm';
 
-        if (MediaRecorder.isTypeSupported('video/mp4')) {
+        if (selectedFmt === 'mp4' || (selectedFmt === 'original' && MediaRecorder.isTypeSupported('video/mp4'))) {
           mimeType = 'video/mp4';
           ext = 'mp4';
         }
@@ -542,7 +593,16 @@ document.addEventListener('DOMContentLoaded', () => {
             recorder.stop();
             return;
           }
-          ctx.drawImage(video, 0, 0, width, height);
+          ctx.save();
+          if (currentRotation !== 0 || currentFlip) {
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            if (currentRotation) ctx.rotate((currentRotation * Math.PI) / 180);
+            if (currentFlip) ctx.scale(-1, 1);
+            ctx.drawImage(video, -width / 2, -height / 2, width, height);
+          } else {
+            ctx.drawImage(video, 0, 0, width, height);
+          }
+          ctx.restore();
           requestAnimationFrame(drawFrame);
         }
 

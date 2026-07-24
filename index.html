@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mediainfo.js/dist/mediainfo.min.js"></script>
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #09090b; }
@@ -20,12 +21,12 @@
 
   <header class="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
-        <i class="fa-solid fa-shield-halved text-lg"></i>
+      <div class="w-9 h-9 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center shadow-lg shadow-rose-500/10">
+        <img src="icon.png" alt="EXIF-B-Gone Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\'fa-solid fa-shield-halved text-rose-500 text-lg\'></i>'">
       </div>
       <div>
         <h1 class="text-base font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-          EXIF-B-Gone <span class="text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-1.5 py-0.5 rounded-full font-mono">v1.5.0</span>
+          EXIF-B-Gone <span class="text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-1.5 py-0.5 rounded-full font-mono">v1.5.1</span>
         </h1>
         <p class="text-xs text-zinc-500" data-i18n="subtitle">Strip unwanted metadata from your photos & videos.</p>
       </div>
@@ -66,11 +67,7 @@
               <span data-i18n="outFormat">Export Format</span>
             </label>
             <select id="exportFormat" class="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-rose-500/50">
-              <option value="original">Original Format</option>
-              <option value="jpeg">JPEG (.jpg)</option>
-              <option value="png">PNG (.png)</option>
-              <option value="webp">WebP (.webp)</option>
-            </select>
+              </select>
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -201,7 +198,7 @@
         <label class="text-xs font-medium text-zinc-400" data-i18n="updateLabel">Software Updates</label>
         <div class="flex items-center justify-between bg-zinc-950 p-3 rounded-xl border border-zinc-800">
           <div class="flex flex-col">
-            <span class="text-xs text-zinc-200" data-i18n="currVer">Current Version: v1.5.0</span>
+            <span class="text-xs text-zinc-200" data-i18n="currVer">Current Version: v1.5.1</span>
             <span id="updateStatus" class="text-[10px] text-zinc-500 mt-0.5">Click to check for new releases</span>
           </div>
           <button id="checkUpdateBtn" class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs text-zinc-200 hover:text-white transition-all flex items-center gap-1.5">
