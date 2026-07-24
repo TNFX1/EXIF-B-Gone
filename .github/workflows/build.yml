@@ -22,8 +22,8 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build Electron App
-        run: npm run build
+      - name: Build Electron App (Dir Output)
+        run: npx electron-builder --win --dir
 
       - name: Install Inno Setup
         run: choco install innosetup -y
