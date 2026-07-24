@@ -26,7 +26,7 @@ jobs:
         Invoke-WebRequest -Uri "https://dl.nwjs.io/v0.83.0/nwjs-v0.83.0-win-x64.zip" -OutFile "nwjs.zip"
         Expand-Archive -Path "nwjs.zip" -DestinationPath "build_dir"
         
-        # Sadece var olan uygulama dosyalarini otomatik tespit et ve paketle
+        # Uygulama dosyalarini paketle
         $filesToPack = Get-ChildItem -Path "index.html", "app.js", "package.json", "icon.*" -ErrorAction SilentlyContinue
         Compress-Archive -Path $filesToPack -DestinationPath "build_dir\app.nw.zip"
         Rename-Item -Path "build_dir\app.nw.zip" -NewName "app.nw"
@@ -34,23 +34,30 @@ jobs:
         $nwPath = Get-ChildItem -Path "build_dir" -Filter "nwjs-v*" | Select-Object -First 1
         Copy-Item -Path "build_dir\app.nw" -Destination $nwPath.FullName
         
-        # NW.js exe ile uygulama paketini birlestir
+        # NW.js exe ile birleştir
         Set-Location -Path $nwPath.FullName
         cmd /c "copy /b nw.exe+app.nw EXIF-B-Gone.exe"
         Remove-Item nw.exe
         Remove-Item app.nw
 
-        # Portatif ZIP paketi olustur
+        # Portable ZIP paketi
         Compress-Archive -Path "*" -DestinationPath "..\..\dist\EXIF-B-Gone-Windows-x64.zip"
 
-    # Chocolatey ile Inno Setup Kurulumu ve Derleme
+    - name: installer.iss Versiyonunu Güncelle
+      shell: powershell
+      run: |
+        $tagVersion = "${{ github.ref_name }}".Replace('v', '')
+        if (Test-Path "installer.iss") {
+          (Get-Content "installer.iss") -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$tagVersion`"" | Set-Content "installer.iss"
+        }
+
     - name: Inno Setup ile Setup.exe Oluştur
       shell: powershell
       run: |
         choco install innosetup -y --no-progress
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
-    - name: Release Oluştur (ZIP ve Setup.exe Yukle)
+    - name: Release Oluştur
       uses: softprops/action-gh-release@v1
       with:
         files: |

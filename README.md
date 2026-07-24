@@ -8,7 +8,7 @@
   
   *Easily inspect and strip sensitive metadata like GPS location, capture dates, hardware serial numbers, and camera settings from your images — 100% locally on your device.*
 
-  [![Version](https://img.shields.io/badge/version-1.2.1-rose.svg?style=for-the-badge)](https://github.com/TNFX1/EXIF-B-Gone)
+  [![Version](https://img.shields.io/badge/version-1.3.0-rose.svg?style=for-the-badge)](https://github.com/TNFX1/EXIF-B-Gone)
   [![License](https://img.shields.io/badge/license-MIT-emerald.svg?style=for-the-badge)](LICENSE)
   [![Privacy](https://img.shields.io/badge/privacy-100%25%20Client--Side-blue.svg?style=for-the-badge)](#-privacy--security)
   [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Web-purple.svg?style=for-the-badge)](#-installation)
@@ -27,12 +27,12 @@ Photos shared on social media and the web often contain hidden metadata includin
 
 ## ✨ Key Features
 
-- 🔍 **Detailed Metadata Inspector:** Instantly view embedded GPS location, camera settings, hardware models, and dates.
-- 🗺️ **GPS Map Quick-Link:** Directly open coordinates on Google Maps to see what location data your photo is leaking.
-- 🖼️ **Image Preview:** Built-in previewer to verify photos in your queue before processing.
-- 🧹 **Deep Scrubbing:** Permanently strips GPS, timestamps, serial numbers, and software signatures.
-- 📐 **Image Resizing & Format Conversion:** Adjust image width, export as JPG/PNG/WebP, and control compression quality.
-- 🌐 **Multi-Language Support:** First-launch language picker with built-in Turkish and English options.
+- 🔍 **Detailed Metadata Inspector:** Instantly view embedded GPS location, camera settings, hardware models, ICC profiles, and capture dates.
+- 👁️ **Live Quality & Canvas Preview:** Real-time visual feedback! Instantly preview quality changes, rotation, mirroring, and resizing before saving.
+- 🍏 **HEIC / Apple Photo Support:** Native decoding & preview support for iPhone/Apple `.heic` and `.heif` images.
+- 🧹 **Deep Scrubbing:** Permanently strips GPS, timestamps, serial numbers, camera details, and software signatures at the pixel level.
+- 📐 **Image Resizing & Format Conversion:** Adjust image width, export as JPG/PNG/WebP, and fine-tune compression quality sliders.
+- 🌐 **Multi-Language Support:** First-launch language picker with seamless Turkish and English localization.
 - 📦 **Batch Operations & ZIP Export:** Process multiple photos at once and download them individually or as a single `.zip` archive.
 - 🔒 **100% Offline & Private:** Your photos **never** leave your computer. All processing happens locally inside your device's memory.
 
@@ -55,7 +55,7 @@ Clone this repository and double-click `index.html` to open the utility in any m
 
 ## 🛠️ Tech Stack
 
-- **UI & Styling:** HTML5, Tailwind CSS, FontAwesome (Dark Obsidian Theme)
+- **UI & Styling:** HTML5, Tailwind CSS, FontAwesome (Matte OLED Dark Theme)
 - **Parsing Engine:** `exifr`
 - **Archiving Engine:** `JSZip`
 - **Desktop Packaging:** NW.js & Inno Setup

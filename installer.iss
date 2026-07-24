@@ -1,28 +1,41 @@
+#define MyAppName "EXIF-B-Gone"
+#define MyAppVersion "1.5.0"
+#define MyAppPublisher "TNFX1"
+#define MyAppURL "https://github.com/TNFX1/EXIF-B-Gone"
+#define MyAppExeName "EXIF-B-Gone.exe"
+
 [Setup]
-AppName=EXIF-B-Gone
-AppVersion=1.2.1
-DefaultDirName={autopf}\EXIF-B-Gone
-DefaultGroupName=EXIF-B-Gone
-UninstallDisplayIcon={app}\icon.ico
-SetupIconFile=icon.ico
-WizardStyle=modern
-Compression=lzma2
-SolidCompression=yes
+AppId={{8A1B2C3D-4E5F-6A7B-8C9D-0E1F2A3B4C5D}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
+DefaultDirName={autopf}\{#MyAppName}
+DisableProgramGroupPage=yes
 OutputDir=dist
 OutputBaseFilename=EXIF-B-Gone-Setup-x64
-DisableProgramGroupPage=yes
+Compression=lzma2/ultra64
+SolidCompression=yes
+WizardStyle=modern
+SetupIconFile=icon.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "build_dir\nwjs-v0.83.0-win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
-Source: "icon.png"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{autodesktop}\EXIF-B-Gone"; Filename: "{app}\EXIF-B-Gone.exe"; IconFilename: "{app}\icon.ico"; Tasks: desktopicon
-Name: "{group}\EXIF-B-Gone"; Filename: "{app}\EXIF-B-Gone.exe"; IconFilename: "{app}\icon.ico"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\icon.ico"
 
 [Run]
-Filename: "{app}\EXIF-B-Gone.exe"; Description: "{cm:LaunchProgram,EXIF-B-Gone}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
