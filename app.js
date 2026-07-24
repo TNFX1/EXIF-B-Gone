@@ -11,7 +11,6 @@ const CURRENT_VERSION = "1.3.0";
 const GITHUB_REPO = "TNFX1/EXIF-B-Gone";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xrenyqgg";
 
-// Canvas'ın yeniden oluştururken dosyaya zorunlu eklediği zararsız sistem ve renk profili parametreleri
 const NON_REMOVABLE_KEYS = [
   'orientation', 'xresolution', 'yresolution', 'resolutionunit',
   'colorspace', 'exifimagewidth', 'exifimageheight', 'imagewidth',
@@ -19,7 +18,8 @@ const NON_REMOVABLE_KEYS = [
   'thumbnail', 'thumbnailbytecount', 'thumbnailoffset', 'jfifversion',
   'thumbnailwidth', 'thumbnailheight', 'profileversion', 'profileclass',
   'colorspacedata', 'profileconnectionspace', 'profilefilesignature',
-  'renderingintent', 'profiledescription', 'profilecopyright'
+  'renderingintent', 'profiledescription', 'profilecopyright',
+  'profilecmmtype', 'primaryplatform', 'devicemanufacturer', 'profilecreator'
 ];
 
 const i18n = {
@@ -150,12 +150,7 @@ async function handleFiles(files) {
     let exifData = null;
     try {
       exifData = await exifr.parse(file, {
-        tiff: true,
-        xmp: true,
-        iptc: true,
-        icc: true,
-        jfif: true,
-        thumbnail: true
+        tiff: true, xmp: true, iptc: true, icc: true, jfif: true, thumbnail: true
       });
     } catch (err) {}
     
@@ -185,7 +180,6 @@ function updateUI() {
   const zipBtn = document.getElementById('zipBtn');
 
   if (fileCount) fileCount.textContent = queue.length;
-
   if (!fileList) return;
 
   if (queue.length === 0) {
@@ -196,11 +190,11 @@ function updateUI() {
     }
     if (processBtn) {
       processBtn.disabled = true;
-      processBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-gray-900 text-gray-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-gray-800";
+      processBtn.className = "flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50";
     }
     if (zipBtn) {
       zipBtn.disabled = true;
-      zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-gray-900 text-gray-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-gray-800";
+      zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-900 text-zinc-600 cursor-not-allowed transition-all flex items-center justify-center gap-2 border border-zinc-800/50";
     }
     resetInspector();
     return;
@@ -215,31 +209,29 @@ function updateUI() {
   }
   if (zipBtn) {
     zipBtn.disabled = false;
-    zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-gray-800 hover:bg-gray-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-gray-700";
+    zipBtn.className = "py-2.5 px-4 rounded-xl font-semibold text-xs bg-zinc-800 hover:bg-zinc-700 text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-zinc-700";
   }
 
   queue.forEach((item, index) => {
     const div = document.createElement('div');
     const isSelected = selectedIndex === index;
-    div.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-gray-900/90 border-rose-500/40' : 'bg-gray-950/60 border-gray-900 hover:border-gray-800'}`;
+    div.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-all border ${isSelected ? 'bg-zinc-900 border-rose-500/50' : 'bg-black/40 border-zinc-800/50 hover:border-zinc-700'}`;
     
     div.innerHTML = `
       <div class="flex items-center gap-3 truncate pointer-events-none">
-        <i class="fa-regular fa-image text-gray-500"></i>
+        <i class="fa-regular fa-image text-zinc-500"></i>
         <div class="truncate">
-          <p class="text-xs font-medium text-gray-200 truncate">${item.name}</p>
-          <p class="text-[10px] text-gray-500">${item.size}</p>
+          <p class="text-xs font-medium text-zinc-200 truncate">${item.name}</p>
+          <p class="text-[10px] text-zinc-500">${item.size}</p>
         </div>
       </div>
-      <button type="button" data-index="${index}" class="delete-single-btn p-1.5 text-gray-500 hover:text-rose-400 transition-colors cursor-pointer">
+      <button type="button" data-index="${index}" class="delete-single-btn p-1.5 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer">
         <i class="fa-solid fa-xmark text-xs pointer-events-none"></i>
       </button>
     `;
 
     div.addEventListener('click', (e) => {
-      if (!e.target.closest('.delete-single-btn')) {
-        selectFile(index);
-      }
+      if (!e.target.closest('.delete-single-btn')) selectFile(index);
     });
 
     const delBtn = div.querySelector('.delete-single-btn');
@@ -255,16 +247,35 @@ function updateUI() {
 
 function removeItemByIndex(index) {
   queue.splice(index, 1);
-  if (queue.length === 0) {
-    selectedIndex = null;
-  } else if (selectedIndex >= queue.length) {
-    selectedIndex = queue.length - 1;
-  }
+  if (queue.length === 0) selectedIndex = null;
+  else if (selectedIndex >= queue.length) selectedIndex = queue.length - 1;
+  
   updateUI();
-  if (selectedIndex !== null && queue[selectedIndex]) {
-    selectFile(selectedIndex);
-  } else {
-    resetInspector();
+  if (selectedIndex !== null && queue[selectedIndex]) selectFile(selectedIndex);
+  else resetInspector();
+}
+
+async function renderLivePreview() {
+  if (selectedIndex === null || !queue[selectedIndex]) return;
+  const item = queue[selectedIndex];
+  const previewContainer = document.getElementById('imagePreviewContainer');
+  const previewImg = document.getElementById('imagePreview');
+  
+  if (!previewImg || !previewContainer) return;
+
+  previewContainer.classList.remove('hidden');
+
+  // İşlenmiş güncel halini önizleme için al
+  try {
+    const processed = await processImage(item);
+    if (previewImg.dataset.oldBlobUrl) {
+      URL.revokeObjectURL(previewImg.dataset.oldBlobUrl);
+    }
+    const newUrl = URL.createObjectURL(processed.blob);
+    previewImg.dataset.oldBlobUrl = newUrl;
+    previewImg.src = newUrl;
+  } catch (err) {
+    previewImg.src = URL.createObjectURL(item.file);
   }
 }
 
@@ -276,18 +287,12 @@ function selectFile(index) {
   const fileNameEl = document.getElementById('selectedFileName');
   if (fileNameEl) fileNameEl.textContent = item.name;
   
-  const previewContainer = document.getElementById('imagePreviewContainer');
-  const previewImg = document.getElementById('imagePreview');
-  if (previewImg && previewContainer) {
-    previewImg.src = URL.createObjectURL(item.file);
-    applyPreviewTransform();
-    previewContainer.classList.remove('hidden');
-  }
+  renderLivePreview();
 
   const exifInspector = document.getElementById('exifInspector');
   if (exifInspector) {
     if (!item.exif || Object.keys(item.exif).length === 0) {
-      exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Fotoğrafta hiçbir gizli veri (EXIF/GPS/XMP) yok, tamamen temiz!' : 'No sensitive metadata found in this photo, completely clean!'}</span></div>`;
+      exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Fotoğrafta hiçbir gizli veri (EXIF/GPS/XMP) yok!' : 'No sensitive metadata found!'}</span></div>`;
     } else {
       let filteredEntries = [];
       for (const [key, val] of Object.entries(item.exif)) {
@@ -299,13 +304,13 @@ function selectFile(index) {
       }
 
       if (filteredEntries.length === 0) {
-        exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Görsel tamamen temiz. Özel EXIF/GPS verisi barındırmıyor.' : 'Image is clean. No sensitive EXIF/GPS data.'}</span></div>`;
+        exifInspector.innerHTML = `<div class="text-center py-10 text-emerald-400/90 text-xs flex flex-col items-center gap-2"><i class="fa-solid fa-circle-check text-lg"></i><span>${currentLang === 'tr' ? 'Görsel temiz. Özel EXIF/GPS verisi yok.' : 'Image is clean. No sensitive EXIF/GPS data.'}</span></div>`;
       } else {
         let html = '<div class="flex flex-col gap-1.5 w-full">';
         for (const [key, val] of filteredEntries) {
           html += `
-            <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-gray-950 border border-gray-900">
-              <span class="text-gray-400 font-medium">${key}</span>
+            <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-black/60 border border-zinc-800/80">
+              <span class="text-zinc-400 font-medium">${key}</span>
               <span class="text-rose-400 font-mono text-[11px] truncate max-w-[180px]">${val}</span>
             </div>
           `;
@@ -319,40 +324,39 @@ function selectFile(index) {
   updateUI();
 }
 
-function applyPreviewTransform() {
-  if (selectedIndex === null || !queue[selectedIndex]) return;
-  const item = queue[selectedIndex];
-  const previewImg = document.getElementById('imagePreview');
-  if (previewImg) {
-    const scaleH = item.flipH ? -1 : 1;
-    previewImg.style.transform = `rotate(${item.rotation}deg) scaleX(${scaleH})`;
-  }
-}
-
 document.getElementById('rotateLeftBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].rotation = (queue[selectedIndex].rotation - 90) % 360;
-    applyPreviewTransform();
+    renderLivePreview();
   }
 });
 
 document.getElementById('rotateRightBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].rotation = (queue[selectedIndex].rotation + 90) % 360;
-    applyPreviewTransform();
+    renderLivePreview();
   }
 });
 
 document.getElementById('flipHBtn')?.addEventListener('click', () => {
   if (selectedIndex !== null && queue[selectedIndex]) {
     queue[selectedIndex].flipH = !queue[selectedIndex].flipH;
-    applyPreviewTransform();
+    renderLivePreview();
   }
 });
 
 document.getElementById('qualityRange')?.addEventListener('input', (e) => {
   const qualityVal = document.getElementById('qualityVal');
   if (qualityVal) qualityVal.textContent = Math.round(e.target.value * 100) + '%';
+  renderLivePreview();
+});
+
+document.getElementById('exportFormat')?.addEventListener('change', () => {
+  renderLivePreview();
+});
+
+document.getElementById('maxWidthInput')?.addEventListener('input', () => {
+  renderLivePreview();
 });
 
 document.getElementById('clearAllBtn')?.addEventListener('click', (e) => {
@@ -371,80 +375,102 @@ function resetInspector() {
   
   const exifInspector = document.getElementById('exifInspector');
   if (exifInspector) {
-    exifInspector.innerHTML = `<div class="text-center py-12 text-gray-600 text-xs leading-relaxed" data-i18n="inspectorEmpty">${i18n[currentLang].inspectorEmpty}</div>`;
+    exifInspector.innerHTML = `<div class="text-center py-12 text-zinc-600 text-xs leading-relaxed">${i18n[currentLang].inspectorEmpty}</div>`;
   }
 }
 
 function triggerDownload(blob, fileName) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 300);
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (e) {
+    console.error("İndirme hatası:", e);
+  }
 }
 
 async function processImage(item) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let origW = img.width;
-      let origH = img.height;
+      try {
+        const canvas = document.createElement('canvas');
+        let origW = img.naturalWidth || img.width;
+        let origH = img.naturalHeight || img.height;
 
-      const rot = Math.abs(item.rotation % 360);
-      const is90 = rot === 90 || rot === 270;
+        const rot = Math.abs(item.rotation % 360);
+        const is90 = rot === 90 || rot === 270;
 
-      let renderW = is90 ? origH : origW;
-      let renderH = is90 ? origW : origH;
+        let renderW = is90 ? origH : origW;
+        let renderH = is90 ? origW : origH;
 
-      const maxWidthInput = document.getElementById('maxWidthInput');
-      const maxWidth = maxWidthInput ? parseInt(maxWidthInput.value) : null;
-      if (maxWidth && renderW > maxWidth) {
-        renderH = Math.round((renderH * maxWidth) / renderW);
-        renderW = maxWidth;
+        const maxWidthInput = document.getElementById('maxWidthInput');
+        const maxWidth = maxWidthInput ? parseInt(maxWidthInput.value) : null;
+        if (maxWidth && renderW > maxWidth) {
+          renderH = Math.round((renderH * maxWidth) / renderW);
+          renderW = maxWidth;
+        }
+
+        canvas.width = renderW;
+        canvas.height = renderH;
+
+        const ctx = canvas.getContext('2d');
+        const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
+        
+        let targetMime = 'image/jpeg';
+        if (exportFormatSelect === 'original') {
+          if (item.file.type && item.file.type !== 'image/heic' && item.file.type !== 'image/heif') {
+            targetMime = item.file.type;
+          }
+        } else {
+          targetMime = exportFormatSelect;
+        }
+
+        const qualityRange = document.getElementById('qualityRange');
+        const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
+
+        if (targetMime === 'image/jpeg') {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((item.rotation * Math.PI) / 180);
+        if (item.flipH) ctx.scale(-1, 1);
+
+        const drawW = is90 ? canvas.height : canvas.width;
+        const drawH = is90 ? canvas.width : canvas.height;
+        
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+
+        let newName = item.name;
+        const nameWithoutExt = newName.substring(0, newName.lastIndexOf('.')) || newName;
+
+        if (targetMime === 'image/jpeg') newName = `${nameWithoutExt}.jpg`;
+        else if (targetMime === 'image/png') newName = `${nameWithoutExt}.png`;
+        else if (targetMime === 'image/webp') newName = `${nameWithoutExt}.webp`;
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve({ blob, name: newName, type: targetMime });
+          } else {
+            reject(new Error("Canvas toBlob failed"));
+          }
+        }, targetMime, quality);
+      } catch (err) {
+        reject(err);
       }
-
-      canvas.width = renderW;
-      canvas.height = renderH;
-
-      const ctx = canvas.getContext('2d');
-      const exportFormatSelect = document.getElementById('exportFormat')?.value || 'original';
-      let targetMime = exportFormatSelect === 'original' ? item.file.type : exportFormatSelect;
-
-      const qualityRange = document.getElementById('qualityRange');
-      const quality = qualityRange ? parseFloat(qualityRange.value) : 0.9;
-
-      if (targetMime === 'image/jpeg') {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((item.rotation * Math.PI) / 180);
-      if (item.flipH) ctx.scale(-1, 1);
-
-      const drawW = is90 ? canvas.height : canvas.width;
-      const drawH = is90 ? canvas.width : canvas.height;
-      
-      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-
-      let newName = item.name;
-      const nameWithoutExt = newName.substring(0, newName.lastIndexOf('.')) || newName;
-
-      if (targetMime === 'image/jpeg') newName = `${nameWithoutExt}.jpg`;
-      else if (targetMime === 'image/png') newName = `${nameWithoutExt}.png`;
-      else if (targetMime === 'image/webp') newName = `${nameWithoutExt}.webp`;
-
-      canvas.toBlob((blob) => {
-        resolve({ blob, name: newName, type: targetMime });
-      }, targetMime, quality);
     };
+    img.onerror = (err) => reject(err);
     img.src = URL.createObjectURL(item.file);
   });
 }
@@ -452,8 +478,12 @@ async function processImage(item) {
 document.getElementById('processBtn')?.addEventListener('click', async () => {
   if (queue.length === 0) return;
   for (const item of queue) {
-    const processed = await processImage(item);
-    triggerDownload(processed.blob, `cleaned_${processed.name}`);
+    try {
+      const processed = await processImage(item);
+      triggerDownload(processed.blob, `cleaned_${processed.name}`);
+    } catch (e) {
+      alert("Görsel işlenirken bir hata oluştu.");
+    }
   }
 });
 
@@ -461,8 +491,10 @@ document.getElementById('zipBtn')?.addEventListener('click', async () => {
   if (queue.length === 0) return;
   const zip = new JSZip();
   for (const item of queue) {
-    const processed = await processImage(item);
-    zip.file(`cleaned_${processed.name}`, processed.blob);
+    try {
+      const processed = await processImage(item);
+      zip.file(`cleaned_${processed.name}`, processed.blob);
+    } catch (e) {}
   }
   const content = await zip.generateAsync({ type: 'blob' });
   triggerDownload(content, 'EXIF_Cleaned_Photos.zip');
@@ -483,7 +515,7 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
   const container = document.getElementById('updateStatusContainer');
   if (!container) return;
   container.classList.remove('hidden');
-  container.innerHTML = `<p class="text-[11px] text-gray-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
+  container.innerHTML = `<p class="text-[11px] text-zinc-400 text-center">${currentLang === 'tr' ? 'Kontrol ediliyor...' : 'Checking for updates...'}</p>`;
 
   try {
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
@@ -499,8 +531,6 @@ document.getElementById('checkUpdateBtn')?.addEventListener('click', async () =>
         : `<button id="autoInstallBtn" type="button" class="w-full py-2 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-all cursor-pointer">Download & Install ${data.tag_name}</button>`;
 
       document.getElementById('autoInstallBtn')?.addEventListener('click', async () => {
-        container.innerHTML = `<p class="text-[11px] text-gray-400 text-center">${currentLang === 'tr' ? 'Setup indiriliyor ve başlatılıyor...' : 'Downloading and launching setup...'}</p>`;
-        
         if (typeof nw !== 'undefined' && nw.Shell) {
           nw.Shell.openExternal(downloadUrl);
         } else {
