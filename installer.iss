@@ -1,7 +1,7 @@
 #define MyAppName "EXIF-B-Gone"
 #define MyAppVersion "1.5.0"
 #define MyAppPublisher "EXIF-B-Gone"
-#define MyAppURL "https://github.com/your-username/EXIF-B-Gone"
+#define MyAppURL "https://github.com/TNFX1/EXIF-B-Gone"
 #define MyAppExeName "EXIF-B-Gone.exe"
 
 [Setup]
@@ -28,7 +28,7 @@ Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: ".git\*,.github\*,Output\*"
+Source: "dist\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autopf}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

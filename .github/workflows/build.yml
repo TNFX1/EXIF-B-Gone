@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build Desktop App
 
 on:
   push:
@@ -11,17 +11,42 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout Code
+      - name: Repo Cek
         uses: actions/checkout@v4
 
-      - name: Install Inno Setup
-        run: choco install innosetup -y
-
-      - name: Compile Inno Setup Script
+      - name: NW.js Birlestir ve Hazirla
+        shell: powershell
         run: |
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          $nwVersion = "v0.85.0"
+          $nwZip = "nwjs-$nwVersion-win-x64.zip"
+          $nwUrl = "https://dl.nwjs.io/$nwVersion/$nwZip"
+          
+          Invoke-WebRequest -Uri $nwUrl -OutFile $nwZip
+          Expand-Archive -Path $nwZip -DestinationPath .
+          
+          Compress-Archive -Path "index.html", "app.js", "package.json" -DestinationPath "app.nw" -Force
+          
+          $nwFolder = "nwjs-$nwVersion-win-x64"
+          cmd /c "copy /b `"$nwFolder\nw.exe`" + app.nw `"$nwFolder\EXIF-B-Gone.exe`""
+          
+          New-Item -ItemType Directory -Force -Path "dist\win-unpacked"
+          Copy-Item -Path "$nwFolder\*" -Destination "dist\win-unpacked" -Recurse -Force
 
-      - name: Create Release
+      - name: installer.iss Versiyonunu Guncelle
+        shell: powershell
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag -replace '^v', ''
+          if (-not $ver) { $ver = "1.5.0" }
+          (Get-Content installer.iss) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$ver`"" | Set-Content installer.iss
+
+      - name: Inno Setup ile Setup.exe Olustur
+        shell: powershell
+        run: |
+          choco install innosetup -y
+          cmd /c `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe`" installer.iss
+
+      - name: Release Olustur
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
