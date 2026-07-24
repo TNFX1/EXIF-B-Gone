@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Build Electron App
-        run: npm run build:win
+        run: npm run build
 
       - name: Install Inno Setup
         run: choco install innosetup -y
