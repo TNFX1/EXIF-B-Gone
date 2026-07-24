@@ -1,15 +1,22 @@
 {
   "name": "exif-b-gone",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "main": "index.html",
   "window": {
     "title": "EXIF-B-Gone",
     "icon": "icon.png",
-    "width": 1200,
+    "width": 1280,
     "height": 800,
     "min_width": 900,
-    "min_height": 650,
+    "min_height": 600,
     "position": "center",
-    "resizable": true
+    "resizable": true,
+    "frame": true
+  },
+  "devDependencies": {
+    "nwjs-builder-phantom": "^1.15.0"
+  },
+  "scripts": {
+    "start": "nw ."
   }
 }
