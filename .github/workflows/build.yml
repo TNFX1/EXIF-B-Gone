@@ -24,7 +24,8 @@ jobs:
           Invoke-WebRequest -Uri $nwUrl -OutFile $nwZip
           Expand-Archive -Path $nwZip -DestinationPath .
           
-          Compress-Archive -Path "index.html", "app.js", "package.json" -DestinationPath "app.nw" -Force
+          Compress-Archive -Path "index.html", "app.js", "package.json" -DestinationPath "app.zip" -Force
+          Rename-Item -Path "app.zip" -NewName "app.nw" -Force
           
           $nwFolder = "nwjs-$nwVersion-win-x64"
           cmd /c "copy /b `"$nwFolder\nw.exe`" + app.nw `"$nwFolder\EXIF-B-Gone.exe`""
@@ -44,7 +45,7 @@ jobs:
         shell: powershell
         run: |
           choco install innosetup -y
-          cmd /c `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe`" installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Release Olustur
         uses: softprops/action-gh-release@v1
