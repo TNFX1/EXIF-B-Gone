@@ -161,7 +161,7 @@ async function handleFiles(files) {
       exif: exifData,
       rotation: 0,
       flipH: false,
-      convertedBlob: null // HEIC için ön işlenmiş görsel tutulacak
+      convertedBlob: null
     });
   }
   
@@ -400,7 +400,6 @@ function triggerDownload(blob, fileName) {
 async function getImageSourceBlob(item) {
   const ext = item.name.split('.').pop().toLowerCase();
   
-  // HEIC veya HEIF dosyası ise heic2any ile JPEG Blob'una dönüştür
   if (ext === 'heic' || ext === 'heif' || item.file.type === 'image/heic' || item.file.type === 'image/heif') {
     if (item.convertedBlob) {
       return item.convertedBlob;
