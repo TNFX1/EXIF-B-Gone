@@ -23,13 +23,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Electron App (Unpacked)
+      - name: Build Electron App
         run: npm run build:win
 
-      - name: Compile Inno Setup
-        uses: MinCi/Inno-Setup-Action@v1.2.2
-        with:
-          filepath: installer.iss
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Compile Inno Setup Script
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
